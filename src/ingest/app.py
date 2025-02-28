@@ -11,47 +11,53 @@ if "graph" not in st.session_state:
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# --- Sidebar for File Upload & Controls ---
+# --- Page Layout ---
+st.set_page_config(layout="wide")  # Set to full-screen mode
+
+# Sidebar for Upload
 st.sidebar.title("Upload Documents")
 uploaded_files = st.sidebar.file_uploader("Upload project-related documents", accept_multiple_files=True)
 
 if st.sidebar.button("Generate Graph"):
     st.session_state.graph = nx.erdos_renyi_graph(10, 0.3)  # Placeholder for processing logic
 
-# --- Chatbot Interface ---
-st.title("Graph-Based Chatbot")
-st.subheader("Ask the chatbot to modify your graph")
+# Create two columns: Left (1/3) for chatbot, Right (2/3) for graph
+left_col, right_col = st.columns([1, 2])
 
-# Chatbot interaction
-user_input = st.text_input("You:", "")
-if st.button("Send"):
-    if user_input:
-        response = f"Processing: {user_input}"  # Placeholder chatbot response
-        st.session_state.chat_history.append(f"You: {user_input}")
-        st.session_state.chat_history.append(f"Bot: {response}")
+# --- Left Panel (Chatbot UI) ---
+with left_col:
+    st.title("Interactive GraphRAG ETL")
+    st.write("Upload your project-related documents for process and modify them here.")
 
-st.write("### Chat History")
-st.write("\n".join(st.session_state.chat_history))
+    # Chat History (display chat bubbles at top)
+    chat_history_str = "\\n".join(st.session_state.chat_history)
+    st.text_area("", chat_history_str, height=300, disabled=True)
 
-# --- Display Graph using Pyvis ---
-st.subheader("Graph Visualization")
+    # User input for chatbot at the bottom
+    user_input = st.text_input("You:", "")
+    if st.button("Send"):
+        if user_input:
+            response = f"Processing: {user_input}"  # Placeholder chatbot response
+            st.session_state.chat_history.append(f"You: {user_input}")
+            st.session_state.chat_history.append(f"Bot: {response}")
 
-# Save Pyvis network to an HTML file
-def draw_graph(graph):
-    net = Network(height="500px", width="100%", notebook=False)
-    net.from_nx(graph)
+# --- Right Panel (Graph Visualization) ---
+with right_col:
+    # st.title("Graph Visualization")
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp_file:
-        net.save_graph(tmp_file.name)
-        return tmp_file.name
+    # Save Pyvis network to an HTML file
+    def draw_graph(graph):
+        net = Network(height="700px", width="100%", notebook=False, bgcolor="#ffffff", font_color="black")
+        net.from_nx(graph)
 
-if st.session_state.graph.nodes:
-    graph_html = draw_graph(st.session_state.graph)
-    with open(graph_html, "r", encoding="utf-8") as file:
-        st.components.v1.html(file.read(), height=500)
-else:
-    st.write("No graph to display. Upload files and generate a graph.")
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp_file:
+            net.save_graph(tmp_file.name)
+            return tmp_file.name
 
-# Cleanup temp file
-if "graph_html" in locals():
-    os.unlink(graph_html)
+    if st.session_state.graph.nodes:
+        graph_html = draw_graph(st.session_state.graph)
+        with open(graph_html, "r", encoding="utf-8") as file:
+            st.components.v1.html(file.read(), height=700, scrolling=False)
+        os.unlink(graph_html)  # Cleanup
+    else:
+        st.write("No graph to display. Upload files and generate a graph.")

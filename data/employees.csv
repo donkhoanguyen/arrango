@@ -1,0 +1,37 @@
+EmpID,FirstName,LastName,Email,Role,Department,Team,Seniority,HireDate,Salary,ManagerID
+1,Stephanie,Harris,stephanie.harris@company.com,Director,Data,Leadership,Director,2017-02-21,186265,
+2,Justin,Lee,justin.lee@company.com,Vice-Director,Data,Leadership,Vice-Director,2019-08-24,161685,1.0
+3,Timothy,Johnson,timothy.johnson@company.com,Business Intelligence Lead,Data,Business Intelligence,Lead,2018-01-23,72433,2.0
+4,Amy,Bailey,amy.bailey@company.com,Data Engineering Lead,Data,Data Engineering,Lead,2018-03-31,87568,2.0
+5,Pamela,Bell,pamela.bell@company.com,Data Science Lead,Data,Data Science,Lead,2018-12-11,76396,2.0
+6,Edward,Murphy,edward.murphy@company.com,Data Governance Lead,Data,Data Governance,Lead,2017-08-09,88431,2.0
+7,Cynthia,Harris,cynthia.harris@company.com,BI Analyst,Data,Business Intelligence,Senior,2017-06-26,134118,3.0
+8,Kathleen,Stewart,kathleen.stewart@company.com,BI Analyst,Data,Business Intelligence,Senior,2015-09-23,132912,3.0
+9,Robert,Stewart,robert.stewart@company.com,BI Analyst,Data,Business Intelligence,Senior,2016-03-26,129502,3.0
+10,Sarah,Jones,sarah.jones@company.com,BI Analyst,Data,Business Intelligence,Mid-Level,2017-05-11,100555,3.0
+11,Susan,Moore,susan.moore@company.com,BI Analyst,Data,Business Intelligence,Mid-Level,2017-06-16,105787,3.0
+12,Linda,Parker,linda.parker@company.com,BI Analyst,Data,Business Intelligence,Mid-Level,2018-11-28,104541,3.0
+13,Emily,Collins,emily.collins@company.com,BI Analyst,Data,Business Intelligence,Mid-Level,2016-03-12,91021,3.0
+14,Jennifer,Rogers,jennifer.rogers@company.com,BI Analyst,Data,Business Intelligence,Junior,2019-09-18,73843,3.0
+15,Rebecca,Richardson,rebecca.richardson@company.com,BI Analyst,Data,Business Intelligence,Junior,2018-11-26,76873,3.0
+16,Carol,Scott,carol.scott@company.com,Data Engineer,Data,Data Engineering,Senior,2017-06-14,125995,4.0
+17,Susan,Evans,susan.evans@company.com,Data Engineer,Data,Data Engineering,Senior,2016-10-03,132629,4.0
+18,Kathleen,Carter,kathleen.carter@company.com,Data Engineer,Data,Data Engineering,Senior,2016-01-13,133529,4.0
+19,Timothy,Lee,timothy.lee@company.com,Data Engineer,Data,Data Engineering,Mid-Level,2018-05-30,116243,4.0
+20,Cynthia,Mitchell,cynthia.mitchell@company.com,Data Engineer,Data,Data Engineering,Mid-Level,2018-12-18,111448,4.0
+21,Stephen,Moore,stephen.moore@company.com,Data Engineer,Data,Data Engineering,Mid-Level,2017-03-25,110422,4.0
+22,David,Wilson,david.wilson@company.com,Data Engineer,Data,Data Engineering,Mid-Level,2017-11-09,107666,4.0
+23,John,Mitchell,john.mitchell@company.com,Data Engineer,Data,Data Engineering,Junior,2019-12-05,81278,4.0
+24,Larry,Watson,larry.watson@company.com,Data Engineer,Data,Data Engineering,Junior,2019-11-30,82215,4.0
+25,Daniel,Cooper,daniel.cooper@company.com,Data Scientist,Data,Data Science,Senior,2015-10-20,149115,5.0
+26,Paul,Howard,paul.howard@company.com,Data Scientist,Data,Data Science,Senior,2016-04-29,138110,5.0
+27,Nicole,Williams,nicole.williams@company.com,Data Scientist,Data,Data Science,Mid-Level,2016-03-09,123769,5.0
+28,Susan,Allen,susan.allen@company.com,Data Scientist,Data,Data Science,Mid-Level,2017-12-05,100206,5.0
+29,Joseph,Perez,joseph.perez@company.com,Data Scientist,Data,Data Science,Mid-Level,2016-07-24,117868,5.0
+30,Ronald,Richardson,ronald.richardson@company.com,Data Scientist,Data,Data Science,Junior,2019-05-06,88755,5.0
+31,Patricia,Lewis,patricia.lewis@company.com,Data Scientist,Data,Data Science,Junior,2019-05-16,86892,5.0
+32,Joseph,Roberts,joseph.roberts@company.com,Data Governance Analyst,Data,Data Governance,Senior,2016-07-10,111059,6.0
+33,Richard,Lopez,richard.lopez@company.com,Data Governance Analyst,Data,Data Governance,Senior,2016-06-03,120921,6.0
+34,Brian,Cooper,brian.cooper@company.com,Data Governance Analyst,Data,Data Governance,Mid-Level,2016-03-25,87693,6.0
+35,Betty,Young,betty.young@company.com,Data Governance Analyst,Data,Data Governance,Mid-Level,2018-06-26,86306,6.0
+36,Kathleen,Williams,kathleen.williams@company.com,Data Governance Analyst,Data,Data Governance,Junior,2019-01-08,73901,6.0

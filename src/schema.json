@@ -1,0 +1,105 @@
+{
+  "nodes": [
+    {
+      "label": "Employee",
+      "attributes": {
+        "EmpID": "string",
+        "FirstName": "string",
+        "LastName": "string",
+        "Email": "string",
+        "Role": "string",
+        "Department": "string",
+        "Team": "string",
+        "Seniority": "string",
+        "HireDate": "date",
+        "Salary": "number",
+        "ManagerID": "string",
+        "Skills": ["string"],
+        "Certifications": ["string"],
+        "ExperienceLevel": "string",
+        "CurrentWorkload": "number",
+        "Availability": "number",
+        "ProjectHistory": ["string"]
+      }
+    },
+    {
+      "label": "Task",
+      "attributes": {
+        "TaskID": "string",
+        "Description": "string",
+        "AssignedEmployees": ["string"],
+        "Advisors": ["string"],
+        "PrecedingTasks": ["string"],
+        "StoryPoints": "number",
+        "StartTime": "datetime",
+        "EstimatedFinishTime": "datetime",
+        "Status": "string",
+        "ActualFinishTime": "datetime",
+        "RequiredSkills": ["string"],
+        "Priority": "string",
+        "TaskType": "string"
+      }
+    },
+    {
+      "label": "Project",
+      "attributes": {
+        "ProjectID": "string",
+        "Name": "string",
+        "Summary": "string",
+        "BusinessCase": "string",
+        "ExpectedOutcomes": "string",
+        "MonetaryValue": "number",
+        "TimeValue": "number",
+        "Budget": "number",
+        "Timeline": {
+          "StartDate": "date",
+          "EstimatedEndDate": "date",
+          "Milestones": [
+            {
+              "Name": "string",
+              "Date": "date"
+            }
+          ]
+        },
+        "Stakeholders": ["string"],
+        "Priority": "string"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "type": "BELONGS_TO",
+      "from": "Employee",
+      "to": "Project",
+      "attributes": {
+        "RoleInProject": "string",
+        "AllocationPercentage": "number"
+      }
+    },
+    {
+      "type": "DO",
+      "from": "Employee",
+      "to": "Task"
+    },
+    {
+      "type": "VERIFIES",
+      "from": "Employee",
+      "to": "Task"
+    },
+    {
+      "type": "REQUIRES",
+      "from": "Task",
+      "to": "Task"
+    },
+    {
+      "type": "TRACKS",
+      "from": "Project",
+      "to": "Task"
+    },
+    {
+      "type": "MANAGES",
+      "from": "Employee",
+      "to": "Employee"
+    }
+  ]
+}

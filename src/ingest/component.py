@@ -43,30 +43,23 @@ def task_tile(task):
 
     st.markdown(
         f"""
-        <div style="
-            background: #f5f5f5;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 10px;
-            margin-bottom: 10px;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+        <div style="background-color: #f5f5f5; padding: 20px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
         ">
-            <h4 style="margin: 0;">Task: {task.get("TaskID", "Unknown")}</h4>
-            <p style="color: #555;">{task.get("Description", "No description available.")}</p>
-
-            <div style="display: flex; align-items: center;">
-                <div style="background-color: {status_color};
-                            color: white;
-                            padding: 5px 10px;
-                            border-radius: 5px;
-                            font-size: 12px;
-                            font-weight: bold;
-                            display: inline-block;
-                            margin-right: 10px;">
-                    {task.get("Status", "Not Started")}
-                </div>
+            <p style="margin: 0; font-size: 20px; font-weight: bold;">
+                {task.get("Description", "Unknown")}
+            </p>
+            <div style="background-color: {status_color};
+                color: white;
+                padding: 5px 10px;
+                border-radius: 5px;
+                font-size: 12px;
+                font-weight: bold;
+                display: inline-block;
+                margin-right: 10px;">
+                {task.get("Status", "Planned")}
             </div>
-
+            <br> </br> 
+            <p style="color: #555;">Task ID: {task.get("TaskID", "No description available.")}</p>
             <p><b>Assigned Employees:</b> {', '.join(task.get("AssignedEmployees", [])) or 'None'}</p>
             <p><b>Advisors:</b> {', '.join(task.get("Advisors", [])) or 'None'}</p>
         </div>

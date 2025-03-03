@@ -1,5 +1,44 @@
+from collections import deque
 import networkx as nx
 import networkx as nx
+
+def layered_topo_sort(G):
+    """
+    Performs a topological sort on a directed acyclic graph (DAG) using the peeling technique.
+    
+    :param G: Directed graph (DiGraph) from NetworkX
+    :return: A list of layers, where each layer is a list of nodes.
+    """
+    # Ensure the graph is a DAG
+    if not nx.is_directed_acyclic_graph(G):
+        raise ValueError("The graph is not a Directed Acyclic Graph (DAG)")
+    
+    # In-degree calculation: count the number of incoming edges for each node
+    in_degree = {node: G.in_degree(node) for node in G.nodes}
+    
+    layers = []
+    
+    # Use a queue to keep track of nodes with zero in-degree (ready to be processed)
+    queue = deque([node for node, degree in in_degree.items() if degree == 0])
+    
+    while queue:
+        layer = []
+        
+        # Process all nodes with zero in-degree at the current level
+        for _ in range(len(queue)):
+            node = queue.popleft()
+            layer.append(node)
+            
+            # For all outgoing edges, reduce in-degree of target nodes
+            for neighbor in G.neighbors(node):
+                in_degree[neighbor] -= 1
+                if in_degree[neighbor] == 0:
+                    queue.append(neighbor)
+        
+        # Add the processed layer to the result
+        layers.append(layer)
+    
+    return layers
 
 def topo_sort_layered_layout(G, fit=True, padding=30, spacing_factor=1, animate=False, animation_duration=500):
     """
@@ -13,29 +52,16 @@ def topo_sort_layered_layout(G, fit=True, padding=30, spacing_factor=1, animate=
     :param animation_duration: Duration of animation in ms (default 500)
     :return: A dictionary with Cytoscape.js layout options
     """
-    if not nx.is_directed_acyclic_graph(G):
-        raise ValueError("The graph is not a Directed Acyclic Graph (DAG)")
-
-    # Get the topological sort of the graph
-    topological_order = list(nx.topological_sort(G))
+    layers = layered_topo_sort(G.copy())  # Get the layers from the peeling method
     
-    # Create a dictionary to store nodes grouped by their layer/level
-    layers = {}
-    for node in topological_order:
-        level = len(list(nx.ancestors(G, node)))  # Number of ancestors gives the depth level
-        if level not in layers:
-            layers[level] = []
-        layers[level].append(node)
-
     # Create positions for Cytoscape.js with nodes positioned row by row
     positions = {}
-    layer_height = 100  # Height for each layer (adjust as needed)
-    max_layer_width = max(len(layer) for layer in layers.values())  # Find the widest layer
+    layer_height = -100  # Height for each layer (adjust as needed)
     
-    for level, nodes in layers.items():
+    for level, nodes in enumerate(layers):
         layer_width = len(nodes)  # Number of nodes in the current layer
         vertical_position = level * layer_height
-        horizontal_spacing = 50 # Horizontal spacing between nodes in the same layer
+        horizontal_spacing = 100  # Horizontal spacing between nodes in the same layer
         
         for i, node in enumerate(nodes):
             positions[node] = {

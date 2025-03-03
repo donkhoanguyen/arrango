@@ -29,7 +29,7 @@ def employee_tile(employee):
         if st.button("ℹ️ More info", key=f"more_info/employee{employee['EmpID']}"):
             employee_modal(employee)
     with col2:
-        if st.button('✨ Magic Ask', key=f"magic_ask/employee{employee['EmpID']}"):
+        if st.button('✨ Ask about this employee!', key=f"magic_ask/employee{employee['EmpID']}"):
             magic_ask_employee(employee)
        
     st.markdown("---")
@@ -81,7 +81,7 @@ def task_tile(task):
         if st.button("ℹ️ More info", key=f"more_info/task{task['TaskID']}"):
             task_modal(task)
     with col2:
-        if st.button('✨ Magic Ask', key=f"magic_ask/task{task['TaskID']}"):
+        if st.button('✨ Ask about this task!', key=f"magic_ask/task{task['TaskID']}"):
             magic_ask_task(task)
     
     st.markdown("---")

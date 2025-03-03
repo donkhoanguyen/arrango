@@ -62,8 +62,8 @@ def get_all_tasks():
         task_info = {
             "TaskID": task["_key"],
             "Description": task.get("Description"),
-            "AssignedEmployees": task.get("AssignedEmployees").split(","),
-            "Advisors": task.get("Advisors").split(","),
+            "AssignedEmployees": task.get("AssignedEmployees", "").split(","),
+            "Advisors": task.get("Advisors", "").split(","),
             "PrecedingTasks": task.get("PrecedingTasks"), 
             "StoryPoints": task.get("StoryPoints"),
             "StartTime": task.get("StartTime"),

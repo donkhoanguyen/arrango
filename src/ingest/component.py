@@ -23,8 +23,15 @@ def employee_tile(employee):
             </p>
         </div>
         """, unsafe_allow_html=True)
-    if st.button("More info", key=f"more_info/employee{employee['EmpID']}"):
-        employee_modal(employee)
+    col1, col2= st.columns([1,1])
+
+    with col1:
+        if st.button("ℹ️ More info", key=f"more_info/employee{employee['EmpID']}"):
+            employee_modal(employee)
+    with col2:
+        if st.button('✨ Magic Ask', key=f"magic_ask/employee{employee['EmpID']}"):
+            magic_ask_employee(employee)
+       
     
 
 def get_status_color(status):
@@ -67,6 +74,19 @@ def task_tile(task):
         unsafe_allow_html=True
     )
 
+    
+    col1, col2= st.columns([1,1])
+
+    with col1:
+        if st.button("ℹ️ More info", key=f"more_info/task{task['TaskID']}"):
+            task_modal(task)
+    with col2:
+        st.button('✨ Magic Ask', key=f"magic_ask/task{task['TaskID']}")
+
+@st.dialog("Magic Ask Employee")
+def magic_ask_employee(employee):
+    st.chat_input(f"What do you want to ask about {employee['FirstName']}?")
+
 @st.dialog("Employee Information")
 def employee_modal(employee):
     # Creating a modal-like layout for employee information
@@ -103,3 +123,63 @@ def employee_modal(employee):
     st.markdown("### Notes")
     st.markdown("You can add additional information or notes about the employee here.")
     st.markdown("For example, performance reviews, special achievements, or other remarks.")
+
+@st.dialog("Task Information")
+def task_modal(task):
+    """Modal dialog for displaying task details."""
+    
+    # Task Title
+    st.markdown(f"## Task: {task['TaskID']}")
+    st.markdown(f"### {task['Description']}")
+
+    # Task Details
+    st.markdown("### Task Details")
+    st.markdown(f"**Task ID**: {task['TaskID']}")
+    st.markdown(f"**Description**: {task['Description']}")
+    st.markdown(f"**Story Points**: {task.get('StoryPoints', 'N/A')}")
+    
+    # Status with color tag
+    status_color = {
+        "Not Started": "#d3d3d3",
+        "In Progress": "#f39c12",
+        "Completed": "#2ecc71",
+        "Blocked": "#e74c3c"
+    }.get(task.get("Status", "Not Started"), "#bdc3c7")
+
+    st.markdown(
+        f'<div style="background-color: {status_color}; color: white; padding: 5px 10px; '
+        'border-radius: 5px; font-size: 12px; font-weight: bold; display: inline-block;">'
+        f"{task.get('Status', 'Not Started')}</div>",
+        unsafe_allow_html=True
+    )
+
+    # Assigned Employees & Advisors
+    st.markdown("### Assigned Employees")
+    assigned_employees = ", ".join(task.get("AssignedEmployees", [])) or "None"
+    st.markdown(f"**Employees**: {assigned_employees}")
+
+    st.markdown("### Advisors")
+    advisors = ", ".join(task.get("Advisors", [])) or "None"
+    st.markdown(f"**Advisors**: {advisors}")
+
+    # Task Timing
+    st.markdown("### Task Timeline")
+    st.markdown(f"**Start Time**: {task.get('StartTime', 'Unknown')}")
+    st.markdown(f"**Estimated Finish Time**: {task.get('EstimatedFinishTime', 'Unknown')}")
+    st.markdown(f"**Actual Finish Time**: {task.get('ActualFinishTime', 'Not Finished')}")
+
+    # Preceding Tasks
+    if "PrecedingTasks" in task and task["PrecedingTasks"]:
+        preceding_tasks = ", ".join(task["PrecedingTasks"])
+        st.markdown("### Preceding Tasks")
+        st.markdown(f"{preceding_tasks}")
+    else:
+        st.markdown("### Preceding Tasks")
+        st.markdown("No preceding tasks.")
+
+    # Divider
+    st.markdown("---")
+    
+    # Notes (Optional)
+    st.markdown("### Notes")
+    st.markdown("Add any relevant details or comments about this task.")

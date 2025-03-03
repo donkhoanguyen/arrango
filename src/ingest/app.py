@@ -5,6 +5,7 @@ import fitz  # PyMuPDF
 import tempfile
 import os
 import database as db
+import graph
 
 from component import *
 from st_link_analysis import st_link_analysis, NodeStyle, EdgeStyle
@@ -35,11 +36,12 @@ if "emp_interact_graph" not in st.session_state:
     with st.spinner("Retrieving employee interaction graph..."):
         st.session_state.emp_interact_graph = db.get_employee_interact_graph()
 
-# if "emp_interac" not in st.session_state:
-#     st.session_state.emp_interact_graph = db.get_employee_interact_graph()
+if "task_depend_graph" not in st.session_state:
+    with st.spinner("Retrieving task dependence graph..."):
+        st.session_state.task_depend_graph = db.get_task_dependence_graph()
 
 if "main_graph_view" not in st.session_state:
-    st.session_state.main_graph_view = "Employee Interaction"
+    st.session_state.main_graph_view = "Task Dependence"
 
 # Sidebar for Upload and API Key
 os.environ["OPENAI_API_KEY"] = st.sidebar.text_input("OpenAI API Key", type="password")
@@ -103,13 +105,27 @@ def employee_interaction_graph():
     # TODO: Might be a good place to do graphrag here
     st_link_analysis(elements, "grid", node_styles, edge_styles)
 
-if st.session_state.main_graph_view == "Employee Interaction":
-    with st.spinner("Retrieving your graph..."):
-        employee_interaction_graph()
-elif st.session_state.main_graph_view == "Project Overview":
-    st.write("Insert graph here")
+def task_dependence_graph():
+    elements, node_styles, edge_styles = db.retrieve_task_dependence_graph(
+        st.session_state.task_depend_graph,
+        st.session_state.task_info_dict
+    )
+    # Render the component
+    st.markdown("### Task Dependence Network")
 
-st.session_state.main_graph_view = st.selectbox("Choose a graph view", ["Employee Interaction", "Project Overview"])
+    with st.spinner("Calculating task layers..."):
+        layout_options = graph.topo_sort_layered_layout(st.session_state.task_depend_graph)
+        # TODO: Might be a good place to do graphrag here
+        st_link_analysis(elements, layout_options, node_styles, edge_styles)
+
+if st.session_state.main_graph_view == "Employee Interaction":
+    with st.spinner("Retrieving your employees..."):
+        employee_interaction_graph()
+elif st.session_state.main_graph_view == "Task Dependence":
+    with st.spinner("Retrieving your tasks..."):
+        task_dependence_graph()
+
+st.session_state.main_graph_view = st.selectbox("Choose a graph view", ["Employee Interaction", "Task Dependence"])
 
 # Project Overview Section
 st.markdown("### Overview")

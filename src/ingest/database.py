@@ -1,5 +1,7 @@
 import os
+import random
 import nx_arangodb as nxadb
+import networkx as nx
 
 from st_link_analysis import st_link_analysis, NodeStyle, EdgeStyle
 from arango import ArangoClient
@@ -68,7 +70,8 @@ def get_all_tasks():
             "StoryPoints": task.get("StoryPoints"),
             "StartTime": task.get("StartTime"),
             "EstimatedFinishTime": task.get("EstimatedFinishTime"),
-            "Status": task.get("Status"),
+            # "Status": task.get("Status"),
+            "Status": random.choice(list(TASK_STATUS_LABEL_MAP.keys())),
             "ActualFinishTime": task.get("ActualFinishTime")
         }
         task_dict[f"task/{task['_key']}"] = task_info
@@ -78,6 +81,10 @@ def get_all_tasks():
 def get_employee_interact_graph():
     return nxadb.Graph(name="employee_interaction")
 
+def get_task_dependence_graph():
+    return nxadb.DiGraph(name="tasks_sprint1")
+
+
         
 SENIORITY_LABEL_MAP = {
     "Lead": "Lead",
@@ -86,9 +93,14 @@ SENIORITY_LABEL_MAP = {
     "Junior": "JuniorEmployee"
 }
 
-def retrieve_employee_interaction_graph(emp_interact_graph, emp_info_dict):
+TASK_STATUS_LABEL_MAP = {
+    "Planned": "PlannedTask",
+    "In Progress": "InProgressTask",
+    "Complete": "CompleteTask",
+    "Blocked": "BlockedTask"
+}
 
-    employee_information = get_all_employees()
+def retrieve_employee_interaction_graph(emp_interact_graph, emp_info_dict):
     nodes = []
     edges = []
     
@@ -102,7 +114,7 @@ def retrieve_employee_interaction_graph(emp_interact_graph, emp_info_dict):
                 "id": employee_node, 
                 "label": SENIORITY_LABEL_MAP.get(seniority, "Employee"),
                 "name": f"{employee_info['FirstName']} {employee_info['LastName']}",
-                **employee_information[employee_node]
+                **emp_info_dict[employee_node]
             }
         })
     # Style node & edge groups
@@ -119,7 +131,7 @@ def retrieve_employee_interaction_graph(emp_interact_graph, emp_info_dict):
         edges.append({
             "data": {
                 "id": f"{emp_from}->{emp_to}",
-                "label": "Interact",
+                "label": "Interacts",
                 "source": emp_from,
                 "target": emp_to,
             }
@@ -127,6 +139,55 @@ def retrieve_employee_interaction_graph(emp_interact_graph, emp_info_dict):
     
     edge_styles = [
         EdgeStyle("Interact", caption='label', directed=True),
+    ]
+    elements = {
+        "nodes": nodes,
+        "edges": edges,
+    }
+
+    return elements, node_styles, edge_styles
+
+def retrieve_task_dependence_graph(task_interact_graph, task_info_dict):
+    nodes = []
+    edges = []
+    
+    if nx.is_directed_acyclic_graph(task_interact_graph):
+        print("Yup")
+    else:
+        print("FUck")
+    topological_order = list(nx.topological_sort(task_interact_graph))
+    print("Topological Sort:", topological_order)
+
+    for task_node in task_interact_graph.nodes:
+        task_info = task_info_dict[task_node]
+
+        nodes.append({
+            "data": {
+                "id": task_node, 
+                "label": TASK_STATUS_LABEL_MAP.get(task_info["Status"], "Planned"),
+                "name": task_info["TaskID"],
+                **task_info_dict[task_node]
+            }
+        })
+    # Style node & edge groups
+    node_styles = [
+        NodeStyle("PlannedTask", "#d3d3d3", "name", "person"),           # Orange
+        NodeStyle("InProgressTask", "#f39c12", "name", "person"), # Green
+        NodeStyle("CompleteTask", "#2ecc71", "name", "person"), # Blue
+        NodeStyle("BlockedTask", "#e74c3c", "name", "person"), # Amber
+    ]
+    for task_from, task_to in task_interact_graph.edges:
+        edges.append({
+            "data": {
+                "id": f"{task_from}->{task_to}",
+                "label": "Depends On",
+                "source": task_from,
+                "target": task_to,
+            }
+        })
+    
+    edge_styles = [
+        EdgeStyle("Depends On", caption='label', directed=True),
     ]
     elements = {
         "nodes": nodes,

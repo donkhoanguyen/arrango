@@ -95,7 +95,7 @@ if not is_ready:
     st.stop()
 
 def render_employee_interaction_graph():
-    emp_interact_graph = st.session_state.emp_interact_graph,
+    emp_interact_graph = st.session_state.emp_interact_graph
     elements, node_styles, edge_styles = db.retrieve_employee_interaction_graph(
         emp_interact_graph,
         st.session_state.emp_info_dict 

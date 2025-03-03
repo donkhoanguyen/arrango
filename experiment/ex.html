@@ -1,0 +1,357 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 750px;
+                 background-color: #ffffff;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"Description": "Documentation of project and code", "Status": "Planned", "StoryPoints": "2", "TaskID": "TSK-4D677758", "_id": "task/TSK-4D677758", "_key": "TSK-4D677758", "color": "#97c2fc", "id": "task/TSK-4D677758", "label": "task/TSK-4D677758", "shape": "dot", "size": 10}, {"Description": "Automating tests and setup of test environments", "Status": "Planned", "StoryPoints": "8", "TaskID": "TSK-30DBEA24", "_id": "task/TSK-30DBEA24", "_key": "TSK-30DBEA24", "color": "#97c2fc", "id": "task/TSK-30DBEA24", "label": "task/TSK-30DBEA24", "shape": "dot", "size": 10}, {"Description": "Deployment to production environment", "Status": "Planned", "StoryPoints": "5", "TaskID": "TSK-FAC99DF1", "_id": "task/TSK-FAC99DF1", "_key": "TSK-FAC99DF1", "color": "#97c2fc", "id": "task/TSK-FAC99DF1", "label": "task/TSK-FAC99DF1", "shape": "dot", "size": 10}, {"Description": "Setting up a test environment for QA", "Status": "Planned", "StoryPoints": "6", "TaskID": "TSK-93F18D57", "_id": "task/TSK-93F18D57", "_key": "TSK-93F18D57", "color": "#97c2fc", "id": "task/TSK-93F18D57", "label": "task/TSK-93F18D57", "shape": "dot", "size": 10}, {"Description": "Configuring network settings for server", "Status": "Planned", "StoryPoints": "5", "TaskID": "TSK-10847035", "_id": "task/TSK-10847035", "_key": "TSK-10847035", "color": "#97c2fc", "id": "task/TSK-10847035", "label": "task/TSK-10847035", "shape": "dot", "size": 10}, {"Description": "Setting up automatic database backup", "Status": "Planned", "StoryPoints": "8", "TaskID": "TSK-977CB080", "_id": "task/TSK-977CB080", "_key": "TSK-977CB080", "color": "#97c2fc", "id": "task/TSK-977CB080", "label": "task/TSK-977CB080", "shape": "dot", "size": 10}, {"Description": "Setting up database replication", "Status": "Planned", "StoryPoints": "9", "TaskID": "TSK-1A209469", "_id": "task/TSK-1A209469", "_key": "TSK-1A209469", "color": "#97c2fc", "id": "task/TSK-1A209469", "label": "task/TSK-1A209469", "shape": "dot", "size": 10}, {"Description": "Development of user authentication module", "Status": "Planned", "StoryPoints": "8", "TaskID": "TSK-983C30DC", "_id": "task/TSK-983C30DC", "_key": "TSK-983C30DC", "color": "#97c2fc", "id": "task/TSK-983C30DC", "label": "task/TSK-983C30DC", "shape": "dot", "size": 10}, {"Description": "Implementation of user interface based on mockup", "Status": "Planned", "StoryPoints": "8", "TaskID": "TSK-763CE1C3", "_id": "task/TSK-763CE1C3", "_key": "TSK-763CE1C3", "color": "#97c2fc", "id": "task/TSK-763CE1C3", "label": "task/TSK-763CE1C3", "shape": "dot", "size": 10}, {"Description": "Training of end-users", "Status": "Planned", "StoryPoints": "3", "TaskID": "TSK-84305F2F", "_id": "task/TSK-84305F2F", "_key": "TSK-84305F2F", "color": "#97c2fc", "id": "task/TSK-84305F2F", "label": "task/TSK-84305F2F", "shape": "dot", "size": 10}, {"Description": "Integration of front-end and back-end", "Status": "Planned", "StoryPoints": "5", "TaskID": "TSK-5C2187CF", "_id": "task/TSK-5C2187CF", "_key": "TSK-5C2187CF", "color": "#97c2fc", "id": "task/TSK-5C2187CF", "label": "task/TSK-5C2187CF", "shape": "dot", "size": 10}, {"Description": "Back-end application design", "Status": "Planned", "StoryPoints": "5", "TaskID": "TSK-C891B895", "_id": "task/TSK-C891B895", "_key": "TSK-C891B895", "color": "#97c2fc", "id": "task/TSK-C891B895", "label": "task/TSK-C891B895", "shape": "dot", "size": 10}, {"Description": "Development of database schema", "Status": "Planned", "StoryPoints": "5", "TaskID": "TSK-E6CFDD02", "_id": "task/TSK-E6CFDD02", "_key": "TSK-E6CFDD02", "color": "#97c2fc", "id": "task/TSK-E6CFDD02", "label": "task/TSK-E6CFDD02", "shape": "dot", "size": 10}, {"Description": "Designing and implementing backup and disaster recovery plan", "Status": "Planned", "StoryPoints": "8", "TaskID": "TSK-514F6016", "_id": "task/TSK-514F6016", "_key": "TSK-514F6016", "color": "#97c2fc", "id": "task/TSK-514F6016", "label": "task/TSK-514F6016", "shape": "dot", "size": 10}, {"Description": "Bug fixing after user acceptance testing", "Status": "Planned", "StoryPoints": "5", "TaskID": "TSK-54F9521F", "_id": "task/TSK-54F9521F", "_key": "TSK-54F9521F", "color": "#97c2fc", "id": "task/TSK-54F9521F", "label": "task/TSK-54F9521F", "shape": "dot", "size": 10}, {"Description": "Setting up continuous integration and continuous deployment (CI/CD)", "Status": "Planned", "StoryPoints": "8", "TaskID": "TSK-41ECEB44", "_id": "task/TSK-41ECEB44", "_key": "TSK-41ECEB44", "color": "#97c2fc", "id": "task/TSK-41ECEB44", "label": "task/TSK-41ECEB44", "shape": "dot", "size": 10}, {"Description": "Final review and approval of the project", "Status": "Planned", "StoryPoints": "2", "TaskID": "TSK-AAF06E6A", "_id": "task/TSK-AAF06E6A", "_key": "TSK-AAF06E6A", "color": "#97c2fc", "id": "task/TSK-AAF06E6A", "label": "task/TSK-AAF06E6A", "shape": "dot", "size": 10}, {"Description": "Implementation of payment gateway", "Status": "Planned", "StoryPoints": "13", "TaskID": "TSK-2B1FAB57", "_id": "task/TSK-2B1FAB57", "_key": "TSK-2B1FAB57", "color": "#97c2fc", "id": "task/TSK-2B1FAB57", "label": "task/TSK-2B1FAB57", "shape": "dot", "size": 10}, {"Description": "User acceptance testing", "Status": "Planned", "StoryPoints": "3", "TaskID": "TSK-A6994DD6", "_id": "task/TSK-A6994DD6", "_key": "TSK-A6994DD6", "color": "#97c2fc", "id": "task/TSK-A6994DD6", "label": "task/TSK-A6994DD6", "shape": "dot", "size": 10}, {"Description": "Installing the necessary software on server", "Status": "Planned", "StoryPoints": "6", "TaskID": "TSK-1B43CB90", "_id": "task/TSK-1B43CB90", "_key": "TSK-1B43CB90", "color": "#97c2fc", "id": "task/TSK-1B43CB90", "label": "task/TSK-1B43CB90", "shape": "dot", "size": 10}, {"Description": "Configure DNS settings for the server", "Status": "Planned", "StoryPoints": "4", "TaskID": "TSK-FBED5511", "_id": "task/TSK-FBED5511", "_key": "TSK-FBED5511", "color": "#97c2fc", "id": "task/TSK-FBED5511", "label": "task/TSK-FBED5511", "shape": "dot", "size": 10}, {"Description": "Creating documentation for the setup process", "Status": "Planned", "StoryPoints": "4", "TaskID": "TSK-FEA63216", "_id": "task/TSK-FEA63216", "_key": "TSK-FEA63216", "color": "#97c2fc", "id": "task/TSK-FEA63216", "label": "task/TSK-FEA63216", "shape": "dot", "size": 10}, {"Description": "Configuring caching for the server", "Status": "Planned", "StoryPoints": "7", "TaskID": "TSK-FB3E490E", "_id": "task/TSK-FB3E490E", "_key": "TSK-FB3E490E", "color": "#97c2fc", "id": "task/TSK-FB3E490E", "label": "task/TSK-FB3E490E", "shape": "dot", "size": 10}, {"Description": "Setting up a staging environment", "Status": "Planned", "StoryPoints": "8", "TaskID": "TSK-1FE396B7", "_id": "task/TSK-1FE396B7", "_key": "TSK-1FE396B7", "color": "#97c2fc", "id": "task/TSK-1FE396B7", "label": "task/TSK-1FE396B7", "shape": "dot", "size": 10}, {"Description": "Setting up the version control system", "Status": "Planned", "StoryPoints": "5", "TaskID": "TSK-4A3587C9", "_id": "task/TSK-4A3587C9", "_key": "TSK-4A3587C9", "color": "#97c2fc", "id": "task/TSK-4A3587C9", "label": "task/TSK-4A3587C9", "shape": "dot", "size": 10}, {"Description": "Refine ETL pipeline based on test results", "Status": "Planned", "StoryPoints": "5", "TaskID": "TSK-7E9F09A9", "_id": "task/TSK-7E9F09A9", "_key": "TSK-7E9F09A9", "color": "#97c2fc", "id": "task/TSK-7E9F09A9", "label": "task/TSK-7E9F09A9", "shape": "dot", "size": 10}, {"Description": "Conduct a final review of data migration and provide a comprehensive report", "Status": "Planned", "StoryPoints": "3", "TaskID": "TSK-5D974201", "_id": "task/TSK-5D974201", "_key": "TSK-5D974201", "color": "#97c2fc", "id": "task/TSK-5D974201", "label": "task/TSK-5D974201", "shape": "dot", "size": 10}, {"Description": "Implement data validation checks in the ETL pipeline", "Status": "Planned", "StoryPoints": "8", "TaskID": "TSK-FBD87AD9", "_id": "task/TSK-FBD87AD9", "_key": "TSK-FBD87AD9", "color": "#97c2fc", "id": "task/TSK-FBD87AD9", "label": "task/TSK-FBD87AD9", "shape": "dot", "size": 10}, {"Description": "Develop a data validation plan", "Status": "Planned", "StoryPoints": "2", "TaskID": "TSK-0985DBA9", "_id": "task/TSK-0985DBA9", "_key": "TSK-0985DBA9", "color": "#97c2fc", "id": "task/TSK-0985DBA9", "label": "task/TSK-0985DBA9", "shape": "dot", "size": 10}, {"Description": "Analyze dry run results and make necessary adjustments", "Status": "Planned", "StoryPoints": "5", "TaskID": "TSK-DFB54467", "_id": "task/TSK-DFB54467", "_key": "TSK-DFB54467", "color": "#97c2fc", "id": "task/TSK-DFB54467", "label": "task/TSK-DFB54467", "shape": "dot", "size": 10}, {"Description": "Create an ETL pipeline for the initial batch of data", "Status": "Planned", "StoryPoints": "8", "TaskID": "TSK-A0500206", "_id": "task/TSK-A0500206", "_key": "TSK-A0500206", "color": "#97c2fc", "id": "task/TSK-A0500206", "label": "task/TSK-A0500206", "shape": "dot", "size": 10}, {"Description": "Identify data dependencies within the existing system", "Status": "Planned", "StoryPoints": "5", "TaskID": "TSK-42E44473", "_id": "task/TSK-42E44473", "_key": "TSK-42E44473", "color": "#97c2fc", "id": "task/TSK-42E44473", "label": "task/TSK-42E44473", "shape": "dot", "size": 10}, {"Description": "Conduct initial data analysis to identify data types, data volume, and data anomalies", "Status": "Planned", "StoryPoints": "3", "TaskID": "TSK-FAAA4D51", "_id": "task/TSK-FAAA4D51", "_key": "TSK-FAAA4D51", "color": "#97c2fc", "id": "task/TSK-FAAA4D51", "label": "task/TSK-FAAA4D51", "shape": "dot", "size": 10}, {"Description": "Create and execute a plan for ongoing data quality checks", "Status": "Planned", "StoryPoints": "8", "TaskID": "TSK-89806FDF", "_id": "task/TSK-89806FDF", "_key": "TSK-89806FDF", "color": "#97c2fc", "id": "task/TSK-89806FDF", "label": "task/TSK-89806FDF", "shape": "dot", "size": 10}, {"Description": "Performance testing and optimization", "Status": "Planned", "StoryPoints": "8", "TaskID": "TSK-3BA37747", "_id": "task/TSK-3BA37747", "_key": "TSK-3BA37747", "color": "#97c2fc", "id": "task/TSK-3BA37747", "label": "task/TSK-3BA37747", "shape": "dot", "size": 10}, {"Description": "Development of search functionality", "Status": "Planned", "StoryPoints": "5", "TaskID": "TSK-255E6310", "_id": "task/TSK-255E6310", "_key": "TSK-255E6310", "color": "#97c2fc", "id": "task/TSK-255E6310", "label": "task/TSK-255E6310", "shape": "dot", "size": 10}, {"Description": "Setting up monitoring and alerts for the live application", "Status": "Planned", "StoryPoints": "5", "TaskID": "TSK-BE4188D4", "_id": "task/TSK-BE4188D4", "_key": "TSK-BE4188D4", "color": "#97c2fc", "id": "task/TSK-BE4188D4", "label": "task/TSK-BE4188D4", "shape": "dot", "size": 10}, {"Description": "Development of user profile management features", "Status": "Planned", "StoryPoints": "8", "TaskID": "TSK-59CE546C", "_id": "task/TSK-59CE546C", "_key": "TSK-59CE546C", "color": "#97c2fc", "id": "task/TSK-59CE546C", "label": "task/TSK-59CE546C", "shape": "dot", "size": 10}, {"Description": "Creation of project timeline and task allocation", "Status": "Planned", "StoryPoints": "3", "TaskID": "TSK-98C9448B", "_id": "task/TSK-98C9448B", "_key": "TSK-98C9448B", "color": "#97c2fc", "id": "task/TSK-98C9448B", "label": "task/TSK-98C9448B", "shape": "dot", "size": 10}, {"Description": "Initial testing and bug fixing", "Status": "Planned", "StoryPoints": "5", "TaskID": "TSK-CAFF3B09", "_id": "task/TSK-CAFF3B09", "_key": "TSK-CAFF3B09", "color": "#97c2fc", "id": "task/TSK-CAFF3B09", "label": "task/TSK-CAFF3B09", "shape": "dot", "size": 10}, {"Description": "Setting up a system for tracking software bugs", "Status": "Planned", "StoryPoints": "5", "TaskID": "TSK-BE9555AC", "_id": "task/TSK-BE9555AC", "_key": "TSK-BE9555AC", "color": "#97c2fc", "id": "task/TSK-BE9555AC", "label": "task/TSK-BE9555AC", "shape": "dot", "size": 10}, {"Description": "Performing a performance test on the server", "Status": "Planned", "StoryPoints": "7", "TaskID": "TSK-E2842052", "_id": "task/TSK-E2842052", "_key": "TSK-E2842052", "color": "#97c2fc", "id": "task/TSK-E2842052", "label": "task/TSK-E2842052", "shape": "dot", "size": 10}, {"Description": "Implementing load balancing for the server", "Status": "Planned", "StoryPoints": "11", "TaskID": "TSK-B3B5A8F6", "_id": "task/TSK-B3B5A8F6", "_key": "TSK-B3B5A8F6", "color": "#97c2fc", "id": "task/TSK-B3B5A8F6", "label": "task/TSK-B3B5A8F6", "shape": "dot", "size": 10}, {"Description": "Perform user acceptance testing and gather feedback", "Status": "Planned", "StoryPoints": "3", "TaskID": "TSK-C440EB07", "_id": "task/TSK-C440EB07", "_key": "TSK-C440EB07", "color": "#97c2fc", "id": "task/TSK-C440EB07", "label": "task/TSK-C440EB07", "shape": "dot", "size": 10}, {"Description": "Create a data migration cutover plan", "Status": "Planned", "StoryPoints": "2", "TaskID": "TSK-C2D38D23", "_id": "task/TSK-C2D38D23", "_key": "TSK-C2D38D23", "color": "#97c2fc", "id": "task/TSK-C2D38D23", "label": "task/TSK-C2D38D23", "shape": "dot", "size": 10}, {"Description": "Develop initial data transformation plan based on schema design", "Status": "Planned", "StoryPoints": "5", "TaskID": "TSK-5A434477", "_id": "task/TSK-5A434477", "_key": "TSK-5A434477", "color": "#97c2fc", "id": "task/TSK-5A434477", "label": "task/TSK-5A434477", "shape": "dot", "size": 10}, {"Description": "Provide training to end-users on the new system", "Status": "Planned", "StoryPoints": "2", "TaskID": "TSK-46138F7D", "_id": "task/TSK-46138F7D", "_key": "TSK-46138F7D", "color": "#97c2fc", "id": "task/TSK-46138F7D", "label": "task/TSK-46138F7D", "shape": "dot", "size": 10}, {"Description": "Execute data migration cutover", "Status": "Planned", "StoryPoints": "13", "TaskID": "TSK-2F459E7F", "_id": "task/TSK-2F459E7F", "_key": "TSK-2F459E7F", "color": "#97c2fc", "id": "task/TSK-2F459E7F", "label": "task/TSK-2F459E7F", "shape": "dot", "size": 10}, {"Description": "Testing server accessibility and network connectivity", "Status": "Planned", "StoryPoints": "4", "TaskID": "TSK-FD3B1EFF", "_id": "task/TSK-FD3B1EFF", "_key": "TSK-FD3B1EFF", "color": "#97c2fc", "id": "task/TSK-FD3B1EFF", "label": "task/TSK-FD3B1EFF", "shape": "dot", "size": 10}, {"Description": "Setting up the incident alert system", "Status": "Planned", "StoryPoints": "6", "TaskID": "TSK-3D21853C", "_id": "task/TSK-3D21853C", "_key": "TSK-3D21853C", "color": "#97c2fc", "id": "task/TSK-3D21853C", "label": "task/TSK-3D21853C", "shape": "dot", "size": 10}, {"Description": "Performing a security audit of the server", "Status": "Planned", "StoryPoints": "7", "TaskID": "TSK-2179FF75", "_id": "task/TSK-2179FF75", "_key": "TSK-2179FF75", "color": "#97c2fc", "id": "task/TSK-2179FF75", "label": "task/TSK-2179FF75", "shape": "dot", "size": 10}, {"Description": "Creating user accounts for project team", "Status": "Planned", "StoryPoints": "3", "TaskID": "TSK-AE8CFDEC", "_id": "task/TSK-AE8CFDEC", "_key": "TSK-AE8CFDEC", "color": "#97c2fc", "id": "task/TSK-AE8CFDEC", "label": "task/TSK-AE8CFDEC", "shape": "dot", "size": 10}, {"Description": "Training the team on the new system and processes", "Status": "Planned", "StoryPoints": "6", "TaskID": "TSK-736E3B28", "_id": "task/TSK-736E3B28", "_key": "TSK-736E3B28", "color": "#97c2fc", "id": "task/TSK-736E3B28", "label": "task/TSK-736E3B28", "shape": "dot", "size": 10}, {"Description": "Setting up the server\u2019s firewall and security settings", "Status": "Planned", "StoryPoints": "7", "TaskID": "TSK-A0CCA417", "_id": "task/TSK-A0CCA417", "_key": "TSK-A0CCA417", "color": "#97c2fc", "id": "task/TSK-A0CCA417", "label": "task/TSK-A0CCA417", "shape": "dot", "size": 10}, {"Description": "Post-deployment monitoring and issue resolution", "Status": "Planned", "StoryPoints": "5", "TaskID": "TSK-E73A7D25", "_id": "task/TSK-E73A7D25", "_key": "TSK-E73A7D25", "color": "#97c2fc", "id": "task/TSK-E73A7D25", "label": "task/TSK-E73A7D25", "shape": "dot", "size": 10}, {"Description": "Setting up a production environment", "Status": "Planned", "StoryPoints": "10", "TaskID": "TSK-DC3ED3E2", "_id": "task/TSK-DC3ED3E2", "_key": "TSK-DC3ED3E2", "color": "#97c2fc", "id": "task/TSK-DC3ED3E2", "label": "task/TSK-DC3ED3E2", "shape": "dot", "size": 10}, {"Description": "Configuring the build and deployment pipelines", "Status": "Planned", "StoryPoints": "10", "TaskID": "TSK-0115FED3", "_id": "task/TSK-0115FED3", "_key": "TSK-0115FED3", "color": "#97c2fc", "id": "task/TSK-0115FED3", "label": "task/TSK-0115FED3", "shape": "dot", "size": 10}, {"Description": "Refine ETL processes based on post-migration validation results", "Status": "Planned", "StoryPoints": "8", "TaskID": "TSK-89BBB564", "_id": "task/TSK-89BBB564", "_key": "TSK-89BBB564", "color": "#97c2fc", "id": "task/TSK-89BBB564", "label": "task/TSK-89BBB564", "shape": "dot", "size": 10}, {"Description": "Design the schema for the new system based on data analysis outcomes", "Status": "Planned", "StoryPoints": "8", "TaskID": "TSK-F567DBE1", "_id": "task/TSK-F567DBE1", "_key": "TSK-F567DBE1", "color": "#97c2fc", "id": "task/TSK-F567DBE1", "label": "task/TSK-F567DBE1", "shape": "dot", "size": 10}, {"Description": "Test the ETL pipeline on a subset of data", "Status": "Planned", "StoryPoints": "5", "TaskID": "TSK-8CD3CA3E", "_id": "task/TSK-8CD3CA3E", "_key": "TSK-8CD3CA3E", "color": "#97c2fc", "id": "task/TSK-8CD3CA3E", "label": "task/TSK-8CD3CA3E", "shape": "dot", "size": 10}, {"Description": "Perform full data migration dry run", "Status": "Planned", "StoryPoints": "13", "TaskID": "TSK-B03EF789", "_id": "task/TSK-B03EF789", "_key": "TSK-B03EF789", "color": "#97c2fc", "id": "task/TSK-B03EF789", "label": "task/TSK-B03EF789", "shape": "dot", "size": 10}, {"Description": "Identify and fix any data discrepancies", "Status": "Planned", "StoryPoints": "5", "TaskID": "TSK-E2E87C0B", "_id": "task/TSK-E2E87C0B", "_key": "TSK-E2E87C0B", "color": "#97c2fc", "id": "task/TSK-E2E87C0B", "label": "task/TSK-E2E87C0B", "shape": "dot", "size": 10}, {"Description": "Setting up the logging and monitoring system", "Status": "Planned", "StoryPoints": "7", "TaskID": "TSK-F7E19B69", "_id": "task/TSK-F7E19B69", "_key": "TSK-F7E19B69", "color": "#97c2fc", "id": "task/TSK-F7E19B69", "label": "task/TSK-F7E19B69", "shape": "dot", "size": 10}, {"Description": "Setting up continuous integration/continuous deployment (CI/CD) tools", "Status": "Planned", "StoryPoints": "9", "TaskID": "TSK-CB292DC1", "_id": "task/TSK-CB292DC1", "_key": "TSK-CB292DC1", "color": "#97c2fc", "id": "task/TSK-CB292DC1", "label": "task/TSK-CB292DC1", "shape": "dot", "size": 10}, {"Description": "Setting up API endpoints", "Status": "Planned", "StoryPoints": "8", "TaskID": "TSK-F51C17B5", "_id": "task/TSK-F51C17B5", "_key": "TSK-F51C17B5", "color": "#97c2fc", "id": "task/TSK-F51C17B5", "label": "task/TSK-F51C17B5", "shape": "dot", "size": 10}, {"Description": "Create documentation for new data and system architecture", "Status": "Planned", "StoryPoints": "2", "TaskID": "TSK-D5031D4A", "_id": "task/TSK-D5031D4A", "_key": "TSK-D5031D4A", "color": "#97c2fc", "id": "task/TSK-D5031D4A", "label": "task/TSK-D5031D4A", "shape": "dot", "size": 10}, {"Description": "Develop rollback strategy in case of migration failure", "Status": "Planned", "StoryPoints": "3", "TaskID": "TSK-89754CBF", "_id": "task/TSK-89754CBF", "_key": "TSK-89754CBF", "color": "#97c2fc", "id": "task/TSK-89754CBF", "label": "task/TSK-89754CBF", "shape": "dot", "size": 10}, {"Description": "Create a plan for incremental data updates", "Status": "Planned", "StoryPoints": "5", "TaskID": "TSK-B600DD62", "_id": "task/TSK-B600DD62", "_key": "TSK-B600DD62", "color": "#97c2fc", "id": "task/TSK-B600DD62", "label": "task/TSK-B600DD62", "shape": "dot", "size": 10}, {"Description": "Update data dictionary and data models", "Status": "Planned", "StoryPoints": "2", "TaskID": "TSK-29CE08AD", "_id": "task/TSK-29CE08AD", "_key": "TSK-29CE08AD", "color": "#97c2fc", "id": "task/TSK-29CE08AD", "label": "task/TSK-29CE08AD", "shape": "dot", "size": 10}, {"Description": "Implementation of data encryption for user data", "Status": "Planned", "StoryPoints": "8", "TaskID": "TSK-01D25D85", "_id": "task/TSK-01D25D85", "_key": "TSK-01D25D85", "color": "#97c2fc", "id": "task/TSK-01D25D85", "label": "task/TSK-01D25D85", "shape": "dot", "size": 10}, {"Description": "Front-end design mockup creation", "Status": "Planned", "StoryPoints": "3", "TaskID": "TSK-85D5D00C", "_id": "task/TSK-85D5D00C", "_key": "TSK-85D5D00C", "color": "#97c2fc", "id": "task/TSK-85D5D00C", "label": "task/TSK-85D5D00C", "shape": "dot", "size": 10}, {"Description": "Design of application architecture", "Status": "Planned", "StoryPoints": "5", "TaskID": "TSK-A8A24727", "_id": "task/TSK-A8A24727", "_key": "TSK-A8A24727", "color": "#97c2fc", "id": "task/TSK-A8A24727", "label": "task/TSK-A8A24727", "shape": "dot", "size": 10}, {"Description": "Setting up automated testing tools", "Status": "Planned", "StoryPoints": "8", "TaskID": "TSK-0AEE35B2", "_id": "task/TSK-0AEE35B2", "_key": "TSK-0AEE35B2", "color": "#97c2fc", "id": "task/TSK-0AEE35B2", "label": "task/TSK-0AEE35B2", "shape": "dot", "size": 10}, {"Description": "Prepare the system for data migration cutover", "Status": "Planned", "StoryPoints": "3", "TaskID": "TSK-0E209EFC", "_id": "task/TSK-0E209EFC", "_key": "TSK-0E209EFC", "color": "#97c2fc", "id": "task/TSK-0E209EFC", "label": "task/TSK-0E209EFC", "shape": "dot", "size": 10}, {"Description": "Setting up the server environment", "Status": "Planned", "StoryPoints": "8", "TaskID": "TSK-795E9201", "_id": "task/TSK-795E9201", "_key": "TSK-795E9201", "color": "#97c2fc", "id": "task/TSK-795E9201", "label": "task/TSK-795E9201", "shape": "dot", "size": 10}, {"Description": "Setting up backup and recovery processes", "Status": "Planned", "StoryPoints": "8", "TaskID": "TSK-39885F7F", "_id": "task/TSK-39885F7F", "_key": "TSK-39885F7F", "color": "#97c2fc", "id": "task/TSK-39885F7F", "label": "task/TSK-39885F7F", "shape": "dot", "size": 10}, {"Description": "Monitor system performance after migration", "Status": "Planned", "StoryPoints": "2", "TaskID": "TSK-19A45EE8", "_id": "task/TSK-19A45EE8", "_key": "TSK-19A45EE8", "color": "#97c2fc", "id": "task/TSK-19A45EE8", "label": "task/TSK-19A45EE8", "shape": "dot", "size": 10}, {"Description": "Configuring SSL for secure communication", "Status": "Planned", "StoryPoints": "6", "TaskID": "TSK-C4D5CB75", "_id": "task/TSK-C4D5CB75", "_key": "TSK-C4D5CB75", "color": "#97c2fc", "id": "task/TSK-C4D5CB75", "label": "task/TSK-C4D5CB75", "shape": "dot", "size": 10}, {"Description": "Develop a plan for ongoing data management", "Status": "Planned", "StoryPoints": "3", "TaskID": "TSK-3941DB43", "_id": "task/TSK-3941DB43", "_key": "TSK-3941DB43", "color": "#97c2fc", "id": "task/TSK-3941DB43", "label": "task/TSK-3941DB43", "shape": "dot", "size": 10}, {"Description": "Initial project setup and configuration", "Status": "Planned", "StoryPoints": "2", "TaskID": "TSK-CB0C0404", "_id": "task/TSK-CB0C0404", "_key": "TSK-CB0C0404", "color": "#97c2fc", "id": "task/TSK-CB0C0404", "label": "task/TSK-CB0C0404", "shape": "dot", "size": 10}, {"Description": "Development of reporting functionality", "Status": "Planned", "StoryPoints": "5", "TaskID": "TSK-427652F3", "_id": "task/TSK-427652F3", "_key": "TSK-427652F3", "color": "#97c2fc", "id": "task/TSK-427652F3", "label": "task/TSK-427652F3", "shape": "dot", "size": 10}, {"Description": "Design preliminary data migration strategy", "Status": "Planned", "StoryPoints": "3", "TaskID": "TSK-EBA1C369", "_id": "task/TSK-EBA1C369", "_key": "TSK-EBA1C369", "color": "#97c2fc", "id": "task/TSK-EBA1C369", "label": "task/TSK-EBA1C369", "shape": "dot", "size": 10}, {"Description": "Performing a stress test on the server", "Status": "Planned", "StoryPoints": "7", "TaskID": "TSK-2970AC03", "_id": "task/TSK-2970AC03", "_key": "TSK-2970AC03", "color": "#97c2fc", "id": "task/TSK-2970AC03", "label": "task/TSK-2970AC03", "shape": "dot", "size": 10}, {"Description": "Reviewing and improving security measures", "Status": "Planned", "StoryPoints": "5", "TaskID": "TSK-991E6E11", "_id": "task/TSK-991E6E11", "_key": "TSK-991E6E11", "color": "#97c2fc", "id": "task/TSK-991E6E11", "label": "task/TSK-991E6E11", "shape": "dot", "size": 10}, {"Description": "Perform post-migration data validation", "Status": "Planned", "StoryPoints": "8", "TaskID": "TSK-0885F3E9", "_id": "task/TSK-0885F3E9", "_key": "TSK-0885F3E9", "color": "#97c2fc", "id": "task/TSK-0885F3E9", "label": "task/TSK-0885F3E9", "shape": "dot", "size": 10}, {"Description": "Develop training materials for the new system", "Status": "Planned", "StoryPoints": "2", "TaskID": "TSK-1AA8BEAF", "_id": "task/TSK-1AA8BEAF", "_key": "TSK-1AA8BEAF", "color": "#97c2fc", "id": "task/TSK-1AA8BEAF", "label": "task/TSK-1AA8BEAF", "shape": "dot", "size": 10}, {"Description": "Maintenance and regular update of the application", "Status": "Planned", "StoryPoints": "5", "TaskID": "TSK-DA566BCB", "_id": "task/TSK-DA566BCB", "_key": "TSK-DA566BCB", "color": "#97c2fc", "id": "task/TSK-DA566BCB", "label": "task/TSK-DA566BCB", "shape": "dot", "size": 10}, {"Description": "Preparation for deployment", "Status": "Planned", "StoryPoints": "2", "TaskID": "TSK-A3E27D20", "_id": "task/TSK-A3E27D20", "_key": "TSK-A3E27D20", "color": "#97c2fc", "id": "task/TSK-A3E27D20", "label": "task/TSK-A3E27D20", "shape": "dot", "size": 10}, {"Description": "Develop and implement a plan for system backup and recovery", "Status": "Planned", "StoryPoints": "5", "TaskID": "TSK-91119F5B", "_id": "task/TSK-91119F5B", "_key": "TSK-91119F5B", "color": "#97c2fc", "id": "task/TSK-91119F5B", "label": "task/TSK-91119F5B", "shape": "dot", "size": 10}, {"Description": "Configuring server for scalability", "Status": "Planned", "StoryPoints": "9", "TaskID": "TSK-BBA87B09", "_id": "task/TSK-BBA87B09", "_key": "TSK-BBA87B09", "color": "#97c2fc", "id": "task/TSK-BBA87B09", "label": "task/TSK-BBA87B09", "shape": "dot", "size": 10}]);
+                  edges = new vis.DataSet([{"_from": "task/TSK-30DBEA24", "_id": "task_depends_on/10112079", "_key": "10112079", "_to": "task/TSK-4D677758", "arrows": "to", "from": "task/TSK-4D677758", "to": "task/TSK-30DBEA24", "width": 1}, {"_from": "task/TSK-4D677758", "_id": "task_depends_on/10112073", "_key": "10112073", "_to": "task/TSK-FAC99DF1", "arrows": "to", "from": "task/TSK-4D677758", "to": "task/TSK-FAC99DF1", "width": 1}, {"_from": "task/TSK-93F18D57", "_id": "task_depends_on/10112118", "_key": "10112118", "_to": "task/TSK-10847035", "arrows": "to", "from": "task/TSK-93F18D57", "to": "task/TSK-10847035", "width": 1}, {"_from": "task/TSK-93F18D57", "_id": "task_depends_on/10112117", "_key": "10112117", "_to": "task/TSK-977CB080", "arrows": "to", "from": "task/TSK-93F18D57", "to": "task/TSK-977CB080", "width": 1}, {"_from": "task/TSK-93F18D57", "_id": "task_depends_on/10112119", "_key": "10112119", "_to": "task/TSK-1A209469", "arrows": "to", "from": "task/TSK-93F18D57", "to": "task/TSK-1A209469", "width": 1}, {"_from": "task/TSK-763CE1C3", "_id": "task_depends_on/10112041", "_key": "10112041", "_to": "task/TSK-983C30DC", "arrows": "to", "from": "task/TSK-983C30DC", "to": "task/TSK-763CE1C3", "width": 1}, {"_from": "task/TSK-84305F2F", "_id": "task_depends_on/10112076", "_key": "10112076", "_to": "task/TSK-983C30DC", "arrows": "to", "from": "task/TSK-983C30DC", "to": "task/TSK-84305F2F", "width": 1}, {"_from": "task/TSK-983C30DC", "_id": "task_depends_on/10112036", "_key": "10112036", "_to": "task/TSK-5C2187CF", "arrows": "to", "from": "task/TSK-983C30DC", "to": "task/TSK-5C2187CF", "width": 1}, {"_from": "task/TSK-983C30DC", "_id": "task_depends_on/10112037", "_key": "10112037", "_to": "task/TSK-C891B895", "arrows": "to", "from": "task/TSK-983C30DC", "to": "task/TSK-C891B895", "width": 1}, {"_from": "task/TSK-983C30DC", "_id": "task_depends_on/10112038", "_key": "10112038", "_to": "task/TSK-E6CFDD02", "arrows": "to", "from": "task/TSK-983C30DC", "to": "task/TSK-E6CFDD02", "width": 1}, {"_from": "task/TSK-514F6016", "_id": "task_depends_on/10112083", "_key": "10112083", "_to": "task/TSK-54F9521F", "arrows": "to", "from": "task/TSK-514F6016", "to": "task/TSK-54F9521F", "width": 1}, {"_from": "task/TSK-514F6016", "_id": "task_depends_on/10112084", "_key": "10112084", "_to": "task/TSK-41ECEB44", "arrows": "to", "from": "task/TSK-514F6016", "to": "task/TSK-41ECEB44", "width": 1}, {"_from": "task/TSK-AAF06E6A", "_id": "task_depends_on/10112065", "_key": "10112065", "_to": "task/TSK-2B1FAB57", "arrows": "to", "from": "task/TSK-AAF06E6A", "to": "task/TSK-2B1FAB57", "width": 1}, {"_from": "task/TSK-AAF06E6A", "_id": "task_depends_on/10112066", "_key": "10112066", "_to": "task/TSK-A6994DD6", "arrows": "to", "from": "task/TSK-AAF06E6A", "to": "task/TSK-A6994DD6", "width": 1}, {"_from": "task/TSK-AAF06E6A", "_id": "task_depends_on/10112067", "_key": "10112067", "_to": "task/TSK-763CE1C3", "arrows": "to", "from": "task/TSK-AAF06E6A", "to": "task/TSK-763CE1C3", "width": 1}, {"_from": "task/TSK-AAF06E6A", "_id": "task_depends_on/10112064", "_key": "10112064", "_to": "task/TSK-C891B895", "arrows": "to", "from": "task/TSK-AAF06E6A", "to": "task/TSK-C891B895", "width": 1}, {"_from": "task/TSK-FBED5511", "_id": "task_depends_on/10112111", "_key": "10112111", "_to": "task/TSK-1B43CB90", "arrows": "to", "from": "task/TSK-1B43CB90", "to": "task/TSK-FBED5511", "width": 1}, {"_from": "task/TSK-FEA63216", "_id": "task_depends_on/10112098", "_key": "10112098", "_to": "task/TSK-1B43CB90", "arrows": "to", "from": "task/TSK-1B43CB90", "to": "task/TSK-FEA63216", "width": 1}, {"_from": "task/TSK-FB3E490E", "_id": "task_depends_on/10112112", "_key": "10112112", "_to": "task/TSK-1B43CB90", "arrows": "to", "from": "task/TSK-1B43CB90", "to": "task/TSK-FB3E490E", "width": 1}, {"_from": "task/TSK-1FE396B7", "_id": "task_depends_on/10112104", "_key": "10112104", "_to": "task/TSK-1B43CB90", "arrows": "to", "from": "task/TSK-1B43CB90", "to": "task/TSK-1FE396B7", "width": 1}, {"_from": "task/TSK-4A3587C9", "_id": "task_depends_on/10112087", "_key": "10112087", "_to": "task/TSK-1B43CB90", "arrows": "to", "from": "task/TSK-1B43CB90", "to": "task/TSK-4A3587C9", "width": 1}, {"_from": "task/TSK-5D974201", "_id": "task_depends_on/10112162", "_key": "10112162", "_to": "task/TSK-7E9F09A9", "arrows": "to", "from": "task/TSK-7E9F09A9", "to": "task/TSK-5D974201", "width": 1}, {"_from": "task/TSK-FBD87AD9", "_id": "task_depends_on/10112136", "_key": "10112136", "_to": "task/TSK-7E9F09A9", "arrows": "to", "from": "task/TSK-7E9F09A9", "to": "task/TSK-FBD87AD9", "width": 1}, {"_from": "task/TSK-0985DBA9", "_id": "task_depends_on/10112135", "_key": "10112135", "_to": "task/TSK-7E9F09A9", "arrows": "to", "from": "task/TSK-7E9F09A9", "to": "task/TSK-0985DBA9", "width": 1}, {"_from": "task/TSK-DFB54467", "_id": "task_depends_on/10112144", "_key": "10112144", "_to": "task/TSK-7E9F09A9", "arrows": "to", "from": "task/TSK-7E9F09A9", "to": "task/TSK-DFB54467", "width": 1}, {"_from": "task/TSK-7E9F09A9", "_id": "task_depends_on/10112133", "_key": "10112133", "_to": "task/TSK-A0500206", "arrows": "to", "from": "task/TSK-7E9F09A9", "to": "task/TSK-A0500206", "width": 1}, {"_from": "task/TSK-7E9F09A9", "_id": "task_depends_on/10112132", "_key": "10112132", "_to": "task/TSK-42E44473", "arrows": "to", "from": "task/TSK-7E9F09A9", "to": "task/TSK-42E44473", "width": 1}, {"_from": "task/TSK-7E9F09A9", "_id": "task_depends_on/10112131", "_key": "10112131", "_to": "task/TSK-FAAA4D51", "arrows": "to", "from": "task/TSK-7E9F09A9", "to": "task/TSK-FAAA4D51", "width": 1}, {"_from": "task/TSK-89806FDF", "_id": "task_depends_on/10112159", "_key": "10112159", "_to": "task/TSK-7E9F09A9", "arrows": "to", "from": "task/TSK-7E9F09A9", "to": "task/TSK-89806FDF", "width": 1}, {"_from": "task/TSK-FAC99DF1", "_id": "task_depends_on/10112068", "_key": "10112068", "_to": "task/TSK-3BA37747", "arrows": "to", "from": "task/TSK-FAC99DF1", "to": "task/TSK-3BA37747", "width": 1}, {"_from": "task/TSK-255E6310", "_id": "task_depends_on/10112050", "_key": "10112050", "_to": "task/TSK-E6CFDD02", "arrows": "to", "from": "task/TSK-255E6310", "to": "task/TSK-E6CFDD02", "width": 1}, {"_from": "task/TSK-255E6310", "_id": "task_depends_on/10112051", "_key": "10112051", "_to": "task/TSK-C891B895", "arrows": "to", "from": "task/TSK-255E6310", "to": "task/TSK-C891B895", "width": 1}, {"_from": "task/TSK-30DBEA24", "_id": "task_depends_on/10112078", "_key": "10112078", "_to": "task/TSK-255E6310", "arrows": "to", "from": "task/TSK-255E6310", "to": "task/TSK-30DBEA24", "width": 1}, {"_from": "task/TSK-BE4188D4", "_id": "task_depends_on/10112082", "_key": "10112082", "_to": "task/TSK-255E6310", "arrows": "to", "from": "task/TSK-255E6310", "to": "task/TSK-BE4188D4", "width": 1}, {"_from": "task/TSK-BE4188D4", "_id": "task_depends_on/10112081", "_key": "10112081", "_to": "task/TSK-2B1FAB57", "arrows": "to", "from": "task/TSK-2B1FAB57", "to": "task/TSK-BE4188D4", "width": 1}, {"_from": "task/TSK-2B1FAB57", "_id": "task_depends_on/10112054", "_key": "10112054", "_to": "task/TSK-5C2187CF", "arrows": "to", "from": "task/TSK-2B1FAB57", "to": "task/TSK-5C2187CF", "width": 1}, {"_from": "task/TSK-2B1FAB57", "_id": "task_depends_on/10112052", "_key": "10112052", "_to": "task/TSK-59CE546C", "arrows": "to", "from": "task/TSK-2B1FAB57", "to": "task/TSK-59CE546C", "width": 1}, {"_from": "task/TSK-2B1FAB57", "_id": "task_depends_on/10112053", "_key": "10112053", "_to": "task/TSK-98C9448B", "arrows": "to", "from": "task/TSK-2B1FAB57", "to": "task/TSK-98C9448B", "width": 1}, {"_from": "task/TSK-30DBEA24", "_id": "task_depends_on/10112077", "_key": "10112077", "_to": "task/TSK-CAFF3B09", "arrows": "to", "from": "task/TSK-CAFF3B09", "to": "task/TSK-30DBEA24", "width": 1}, {"_from": "task/TSK-CAFF3B09", "_id": "task_depends_on/10112058", "_key": "10112058", "_to": "task/TSK-98C9448B", "arrows": "to", "from": "task/TSK-CAFF3B09", "to": "task/TSK-98C9448B", "width": 1}, {"_from": "task/TSK-BE9555AC", "_id": "task_depends_on/10112125", "_key": "10112125", "_to": "task/TSK-10847035", "arrows": "to", "from": "task/TSK-10847035", "to": "task/TSK-BE9555AC", "width": 1}, {"_from": "task/TSK-E2842052", "_id": "task_depends_on/10112108", "_key": "10112108", "_to": "task/TSK-10847035", "arrows": "to", "from": "task/TSK-10847035", "to": "task/TSK-E2842052", "width": 1}, {"_from": "task/TSK-FB3E490E", "_id": "task_depends_on/10112113", "_key": "10112113", "_to": "task/TSK-B3B5A8F6", "arrows": "to", "from": "task/TSK-B3B5A8F6", "to": "task/TSK-FB3E490E", "width": 1}, {"_from": "task/TSK-C440EB07", "_id": "task_depends_on/10112178", "_key": "10112178", "_to": "task/TSK-FBD87AD9", "arrows": "to", "from": "task/TSK-FBD87AD9", "to": "task/TSK-C440EB07", "width": 1}, {"_from": "task/TSK-C2D38D23", "_id": "task_depends_on/10112149", "_key": "10112149", "_to": "task/TSK-FBD87AD9", "arrows": "to", "from": "task/TSK-FBD87AD9", "to": "task/TSK-C2D38D23", "width": 1}, {"_from": "task/TSK-5D974201", "_id": "task_depends_on/10112164", "_key": "10112164", "_to": "task/TSK-FBD87AD9", "arrows": "to", "from": "task/TSK-FBD87AD9", "to": "task/TSK-5D974201", "width": 1}, {"_from": "task/TSK-FBD87AD9", "_id": "task_depends_on/10112138", "_key": "10112138", "_to": "task/TSK-FAAA4D51", "arrows": "to", "from": "task/TSK-FBD87AD9", "to": "task/TSK-FAAA4D51", "width": 1}, {"_from": "task/TSK-FBD87AD9", "_id": "task_depends_on/10112137", "_key": "10112137", "_to": "task/TSK-5A434477", "arrows": "to", "from": "task/TSK-FBD87AD9", "to": "task/TSK-5A434477", "width": 1}, {"_from": "task/TSK-46138F7D", "_id": "task_depends_on/10112166", "_key": "10112166", "_to": "task/TSK-FBD87AD9", "arrows": "to", "from": "task/TSK-FBD87AD9", "to": "task/TSK-46138F7D", "width": 1}, {"_from": "task/TSK-5D974201", "_id": "task_depends_on/10112161", "_key": "10112161", "_to": "task/TSK-2F459E7F", "arrows": "to", "from": "task/TSK-2F459E7F", "to": "task/TSK-5D974201", "width": 1}, {"_from": "task/TSK-3D21853C", "_id": "task_depends_on/10112097", "_key": "10112097", "_to": "task/TSK-FD3B1EFF", "arrows": "to", "from": "task/TSK-FD3B1EFF", "to": "task/TSK-3D21853C", "width": 1}, {"_from": "task/TSK-2179FF75", "_id": "task_depends_on/10112102", "_key": "10112102", "_to": "task/TSK-FD3B1EFF", "arrows": "to", "from": "task/TSK-FD3B1EFF", "to": "task/TSK-2179FF75", "width": 1}, {"_from": "task/TSK-FD3B1EFF", "_id": "task_depends_on/10112085", "_key": "10112085", "_to": "task/TSK-AE8CFDEC", "arrows": "to", "from": "task/TSK-FD3B1EFF", "to": "task/TSK-AE8CFDEC", "width": 1}, {"_from": "task/TSK-2179FF75", "_id": "task_depends_on/10112101", "_key": "10112101", "_to": "task/TSK-736E3B28", "arrows": "to", "from": "task/TSK-736E3B28", "to": "task/TSK-2179FF75", "width": 1}, {"_from": "task/TSK-1FE396B7", "_id": "task_depends_on/10112105", "_key": "10112105", "_to": "task/TSK-736E3B28", "arrows": "to", "from": "task/TSK-736E3B28", "to": "task/TSK-1FE396B7", "width": 1}, {"_from": "task/TSK-3D21853C", "_id": "task_depends_on/10112095", "_key": "10112095", "_to": "task/TSK-4A3587C9", "arrows": "to", "from": "task/TSK-4A3587C9", "to": "task/TSK-3D21853C", "width": 1}, {"_from": "task/TSK-4A3587C9", "_id": "task_depends_on/10112089", "_key": "10112089", "_to": "task/TSK-A0CCA417", "arrows": "to", "from": "task/TSK-4A3587C9", "to": "task/TSK-A0CCA417", "width": 1}, {"_from": "task/TSK-4A3587C9", "_id": "task_depends_on/10112088", "_key": "10112088", "_to": "task/TSK-AE8CFDEC", "arrows": "to", "from": "task/TSK-4A3587C9", "to": "task/TSK-AE8CFDEC", "width": 1}, {"_from": "task/TSK-54F9521F", "_id": "task_depends_on/10112062", "_key": "10112062", "_to": "task/TSK-763CE1C3", "arrows": "to", "from": "task/TSK-54F9521F", "to": "task/TSK-763CE1C3", "width": 1}, {"_from": "task/TSK-54F9521F", "_id": "task_depends_on/10112063", "_key": "10112063", "_to": "task/TSK-A6994DD6", "arrows": "to", "from": "task/TSK-54F9521F", "to": "task/TSK-A6994DD6", "width": 1}, {"_from": "task/TSK-E73A7D25", "_id": "task_depends_on/10112069", "_key": "10112069", "_to": "task/TSK-54F9521F", "arrows": "to", "from": "task/TSK-54F9521F", "to": "task/TSK-E73A7D25", "width": 1}, {"_from": "task/TSK-DC3ED3E2", "_id": "task_depends_on/10112107", "_key": "10112107", "_to": "task/TSK-0115FED3", "arrows": "to", "from": "task/TSK-DC3ED3E2", "to": "task/TSK-0115FED3", "width": 1}, {"_from": "task/TSK-5D974201", "_id": "task_depends_on/10112163", "_key": "10112163", "_to": "task/TSK-89BBB564", "arrows": "to", "from": "task/TSK-5D974201", "to": "task/TSK-89BBB564", "width": 1}, {"_from": "task/TSK-977CB080", "_id": "task_depends_on/10112110", "_key": "10112110", "_to": "task/TSK-E2842052", "arrows": "to", "from": "task/TSK-E2842052", "to": "task/TSK-977CB080", "width": 1}, {"_from": "task/TSK-8CD3CA3E", "_id": "task_depends_on/10112127", "_key": "10112127", "_to": "task/TSK-F567DBE1", "arrows": "to", "from": "task/TSK-F567DBE1", "to": "task/TSK-8CD3CA3E", "width": 1}, {"_from": "task/TSK-B03EF789", "_id": "task_depends_on/10112140", "_key": "10112140", "_to": "task/TSK-F567DBE1", "arrows": "to", "from": "task/TSK-F567DBE1", "to": "task/TSK-B03EF789", "width": 1}, {"_from": "task/TSK-DFB54467", "_id": "task_depends_on/10112143", "_key": "10112143", "_to": "task/TSK-F567DBE1", "arrows": "to", "from": "task/TSK-F567DBE1", "to": "task/TSK-DFB54467", "width": 1}, {"_from": "task/TSK-E2E87C0B", "_id": "task_depends_on/10112170", "_key": "10112170", "_to": "task/TSK-F567DBE1", "arrows": "to", "from": "task/TSK-F567DBE1", "to": "task/TSK-E2E87C0B", "width": 1}, {"_from": "task/TSK-3D21853C", "_id": "task_depends_on/10112096", "_key": "10112096", "_to": "task/TSK-F7E19B69", "arrows": "to", "from": "task/TSK-F7E19B69", "to": "task/TSK-3D21853C", "width": 1}, {"_from": "task/TSK-FEA63216", "_id": "task_depends_on/10112099", "_key": "10112099", "_to": "task/TSK-F7E19B69", "arrows": "to", "from": "task/TSK-F7E19B69", "to": "task/TSK-FEA63216", "width": 1}, {"_from": "task/TSK-1FE396B7", "_id": "task_depends_on/10112106", "_key": "10112106", "_to": "task/TSK-F7E19B69", "arrows": "to", "from": "task/TSK-F7E19B69", "to": "task/TSK-1FE396B7", "width": 1}, {"_from": "task/TSK-F7E19B69", "_id": "task_depends_on/10112092", "_key": "10112092", "_to": "task/TSK-A0CCA417", "arrows": "to", "from": "task/TSK-F7E19B69", "to": "task/TSK-A0CCA417", "width": 1}, {"_from": "task/TSK-F7E19B69", "_id": "task_depends_on/10112090", "_key": "10112090", "_to": "task/TSK-AE8CFDEC", "arrows": "to", "from": "task/TSK-F7E19B69", "to": "task/TSK-AE8CFDEC", "width": 1}, {"_from": "task/TSK-F7E19B69", "_id": "task_depends_on/10112091", "_key": "10112091", "_to": "task/TSK-0115FED3", "arrows": "to", "from": "task/TSK-F7E19B69", "to": "task/TSK-0115FED3", "width": 1}, {"_from": "task/TSK-F7E19B69", "_id": "task_depends_on/10112093", "_key": "10112093", "_to": "task/TSK-CB292DC1", "arrows": "to", "from": "task/TSK-F7E19B69", "to": "task/TSK-CB292DC1", "width": 1}, {"_from": "task/TSK-BE9555AC", "_id": "task_depends_on/10112122", "_key": "10112122", "_to": "task/TSK-1FE396B7", "arrows": "to", "from": "task/TSK-1FE396B7", "to": "task/TSK-BE9555AC", "width": 1}, {"_from": "task/TSK-1FE396B7", "_id": "task_depends_on/10112103", "_key": "10112103", "_to": "task/TSK-AE8CFDEC", "arrows": "to", "from": "task/TSK-1FE396B7", "to": "task/TSK-AE8CFDEC", "width": 1}, {"_from": "task/TSK-F51C17B5", "_id": "task_depends_on/10112116", "_key": "10112116", "_to": "task/TSK-1FE396B7", "arrows": "to", "from": "task/TSK-1FE396B7", "to": "task/TSK-F51C17B5", "width": 1}, {"_from": "task/TSK-D5031D4A", "_id": "task_depends_on/10112174", "_key": "10112174", "_to": "task/TSK-89754CBF", "arrows": "to", "from": "task/TSK-D5031D4A", "to": "task/TSK-89754CBF", "width": 1}, {"_from": "task/TSK-D5031D4A", "_id": "task_depends_on/10112172", "_key": "10112172", "_to": "task/TSK-B600DD62", "arrows": "to", "from": "task/TSK-D5031D4A", "to": "task/TSK-B600DD62", "width": 1}, {"_from": "task/TSK-D5031D4A", "_id": "task_depends_on/10112175", "_key": "10112175", "_to": "task/TSK-29CE08AD", "arrows": "to", "from": "task/TSK-D5031D4A", "to": "task/TSK-29CE08AD", "width": 1}, {"_from": "task/TSK-D5031D4A", "_id": "task_depends_on/10112173", "_key": "10112173", "_to": "task/TSK-DFB54467", "arrows": "to", "from": "task/TSK-D5031D4A", "to": "task/TSK-DFB54467", "width": 1}, {"_from": "task/TSK-01D25D85", "_id": "task_depends_on/10112049", "_key": "10112049", "_to": "task/TSK-59CE546C", "arrows": "to", "from": "task/TSK-59CE546C", "to": "task/TSK-01D25D85", "width": 1}, {"_from": "task/TSK-59CE546C", "_id": "task_depends_on/10112045", "_key": "10112045", "_to": "task/TSK-85D5D00C", "arrows": "to", "from": "task/TSK-59CE546C", "to": "task/TSK-85D5D00C", "width": 1}, {"_from": "task/TSK-59CE546C", "_id": "task_depends_on/10112043", "_key": "10112043", "_to": "task/TSK-98C9448B", "arrows": "to", "from": "task/TSK-59CE546C", "to": "task/TSK-98C9448B", "width": 1}, {"_from": "task/TSK-59CE546C", "_id": "task_depends_on/10112042", "_key": "10112042", "_to": "task/TSK-763CE1C3", "arrows": "to", "from": "task/TSK-59CE546C", "to": "task/TSK-763CE1C3", "width": 1}, {"_from": "task/TSK-59CE546C", "_id": "task_depends_on/10112044", "_key": "10112044", "_to": "task/TSK-A8A24727", "arrows": "to", "from": "task/TSK-59CE546C", "to": "task/TSK-A8A24727", "width": 1}, {"_from": "task/TSK-89754CBF", "_id": "task_depends_on/10112146", "_key": "10112146", "_to": "task/TSK-42E44473", "arrows": "to", "from": "task/TSK-42E44473", "to": "task/TSK-89754CBF", "width": 1}, {"_from": "task/TSK-B03EF789", "_id": "task_depends_on/10112139", "_key": "10112139", "_to": "task/TSK-42E44473", "arrows": "to", "from": "task/TSK-42E44473", "to": "task/TSK-B03EF789", "width": 1}, {"_from": "task/TSK-84305F2F", "_id": "task_depends_on/10112075", "_key": "10112075", "_to": "task/TSK-A6994DD6", "arrows": "to", "from": "task/TSK-A6994DD6", "to": "task/TSK-84305F2F", "width": 1}, {"_from": "task/TSK-E73A7D25", "_id": "task_depends_on/10112072", "_key": "10112072", "_to": "task/TSK-A6994DD6", "arrows": "to", "from": "task/TSK-A6994DD6", "to": "task/TSK-E73A7D25", "width": 1}, {"_from": "task/TSK-FEA63216", "_id": "task_depends_on/10112100", "_key": "10112100", "_to": "task/TSK-A0CCA417", "arrows": "to", "from": "task/TSK-FEA63216", "to": "task/TSK-A0CCA417", "width": 1}, {"_from": "task/TSK-F51C17B5", "_id": "task_depends_on/10112115", "_key": "10112115", "_to": "task/TSK-FB3E490E", "arrows": "to", "from": "task/TSK-FB3E490E", "to": "task/TSK-F51C17B5", "width": 1}, {"_from": "task/TSK-0AEE35B2", "_id": "task_depends_on/10112121", "_key": "10112121", "_to": "task/TSK-AE8CFDEC", "arrows": "to", "from": "task/TSK-0AEE35B2", "to": "task/TSK-AE8CFDEC", "width": 1}, {"_from": "task/TSK-0AEE35B2", "_id": "task_depends_on/10112120", "_key": "10112120", "_to": "task/TSK-F51C17B5", "arrows": "to", "from": "task/TSK-0AEE35B2", "to": "task/TSK-F51C17B5", "width": 1}, {"_from": "task/TSK-89754CBF", "_id": "task_depends_on/10112145", "_key": "10112145", "_to": "task/TSK-B03EF789", "arrows": "to", "from": "task/TSK-B03EF789", "to": "task/TSK-89754CBF", "width": 1}, {"_from": "task/TSK-C2D38D23", "_id": "task_depends_on/10112148", "_key": "10112148", "_to": "task/TSK-B03EF789", "arrows": "to", "from": "task/TSK-B03EF789", "to": "task/TSK-C2D38D23", "width": 1}, {"_from": "task/TSK-B03EF789", "_id": "task_depends_on/10112142", "_key": "10112142", "_to": "task/TSK-5A434477", "arrows": "to", "from": "task/TSK-B03EF789", "to": "task/TSK-5A434477", "width": 1}, {"_from": "task/TSK-B03EF789", "_id": "task_depends_on/10112141", "_key": "10112141", "_to": "task/TSK-A0500206", "arrows": "to", "from": "task/TSK-B03EF789", "to": "task/TSK-A0500206", "width": 1}, {"_from": "task/TSK-0E209EFC", "_id": "task_depends_on/10112150", "_key": "10112150", "_to": "task/TSK-B03EF789", "arrows": "to", "from": "task/TSK-B03EF789", "to": "task/TSK-0E209EFC", "width": 1}, {"_from": "task/TSK-B600DD62", "_id": "task_depends_on/10112167", "_key": "10112167", "_to": "task/TSK-B03EF789", "arrows": "to", "from": "task/TSK-B03EF789", "to": "task/TSK-B600DD62", "width": 1}, {"_from": "task/TSK-1A209469", "_id": "task_depends_on/10112109", "_key": "10112109", "_to": "task/TSK-795E9201", "arrows": "to", "from": "task/TSK-795E9201", "to": "task/TSK-1A209469", "width": 1}, {"_from": "task/TSK-E73A7D25", "_id": "task_depends_on/10112070", "_key": "10112070", "_to": "task/TSK-85D5D00C", "arrows": "to", "from": "task/TSK-85D5D00C", "to": "task/TSK-E73A7D25", "width": 1}, {"_from": "task/TSK-5C2187CF", "_id": "task_depends_on/10112035", "_key": "10112035", "_to": "task/TSK-85D5D00C", "arrows": "to", "from": "task/TSK-85D5D00C", "to": "task/TSK-5C2187CF", "width": 1}, {"_from": "task/TSK-39885F7F", "_id": "task_depends_on/10112086", "_key": "10112086", "_to": "task/TSK-AE8CFDEC", "arrows": "to", "from": "task/TSK-39885F7F", "to": "task/TSK-AE8CFDEC", "width": 1}, {"_from": "task/TSK-BE9555AC", "_id": "task_depends_on/10112124", "_key": "10112124", "_to": "task/TSK-CB292DC1", "arrows": "to", "from": "task/TSK-CB292DC1", "to": "task/TSK-BE9555AC", "width": 1}, {"_from": "task/TSK-B600DD62", "_id": "task_depends_on/10112168", "_key": "10112168", "_to": "task/TSK-29CE08AD", "arrows": "to", "from": "task/TSK-B600DD62", "to": "task/TSK-29CE08AD", "width": 1}, {"_from": "task/TSK-C440EB07", "_id": "task_depends_on/10112177", "_key": "10112177", "_to": "task/TSK-19A45EE8", "arrows": "to", "from": "task/TSK-19A45EE8", "to": "task/TSK-C440EB07", "width": 1}, {"_from": "task/TSK-E2E87C0B", "_id": "task_depends_on/10112169", "_key": "10112169", "_to": "task/TSK-C2D38D23", "arrows": "to", "from": "task/TSK-E2E87C0B", "to": "task/TSK-C2D38D23", "width": 1}, {"_from": "task/TSK-3D21853C", "_id": "task_depends_on/10112094", "_key": "10112094", "_to": "task/TSK-AE8CFDEC", "arrows": "to", "from": "task/TSK-3D21853C", "to": "task/TSK-AE8CFDEC", "width": 1}, {"_from": "task/TSK-F51C17B5", "_id": "task_depends_on/10112114", "_key": "10112114", "_to": "task/TSK-C4D5CB75", "arrows": "to", "from": "task/TSK-C4D5CB75", "to": "task/TSK-F51C17B5", "width": 1}, {"_from": "task/TSK-C440EB07", "_id": "task_depends_on/10112176", "_key": "10112176", "_to": "task/TSK-3941DB43", "arrows": "to", "from": "task/TSK-C440EB07", "to": "task/TSK-3941DB43", "width": 1}, {"_from": "task/TSK-01D25D85", "_id": "task_depends_on/10112047", "_key": "10112047", "_to": "task/TSK-98C9448B", "arrows": "to", "from": "task/TSK-98C9448B", "to": "task/TSK-01D25D85", "width": 1}, {"_from": "task/TSK-3BA37747", "_id": "task_depends_on/10112059", "_key": "10112059", "_to": "task/TSK-98C9448B", "arrows": "to", "from": "task/TSK-98C9448B", "to": "task/TSK-3BA37747", "width": 1}, {"_from": "task/TSK-763CE1C3", "_id": "task_depends_on/10112039", "_key": "10112039", "_to": "task/TSK-98C9448B", "arrows": "to", "from": "task/TSK-98C9448B", "to": "task/TSK-763CE1C3", "width": 1}, {"_from": "task/TSK-E73A7D25", "_id": "task_depends_on/10112071", "_key": "10112071", "_to": "task/TSK-98C9448B", "arrows": "to", "from": "task/TSK-98C9448B", "to": "task/TSK-E73A7D25", "width": 1}, {"_from": "task/TSK-5C2187CF", "_id": "task_depends_on/10112032", "_key": "10112032", "_to": "task/TSK-98C9448B", "arrows": "to", "from": "task/TSK-98C9448B", "to": "task/TSK-5C2187CF", "width": 1}, {"_from": "task/TSK-8CD3CA3E", "_id": "task_depends_on/10112130", "_key": "10112130", "_to": "task/TSK-A0500206", "arrows": "to", "from": "task/TSK-A0500206", "to": "task/TSK-8CD3CA3E", "width": 1}, {"_from": "task/TSK-A0500206", "_id": "task_depends_on/10112126", "_key": "10112126", "_to": "task/TSK-5A434477", "arrows": "to", "from": "task/TSK-A0500206", "to": "task/TSK-5A434477", "width": 1}, {"_from": "task/TSK-3941DB43", "_id": "task_depends_on/10112171", "_key": "10112171", "_to": "task/TSK-A0500206", "arrows": "to", "from": "task/TSK-A0500206", "to": "task/TSK-3941DB43", "width": 1}, {"_from": "task/TSK-0E209EFC", "_id": "task_depends_on/10112151", "_key": "10112151", "_to": "task/TSK-A0500206", "arrows": "to", "from": "task/TSK-A0500206", "to": "task/TSK-0E209EFC", "width": 1}, {"_from": "task/TSK-0E209EFC", "_id": "task_depends_on/10112152", "_key": "10112152", "_to": "task/TSK-0985DBA9", "arrows": "to", "from": "task/TSK-0985DBA9", "to": "task/TSK-0E209EFC", "width": 1}, {"_from": "task/TSK-0985DBA9", "_id": "task_depends_on/10112134", "_key": "10112134", "_to": "task/TSK-5A434477", "arrows": "to", "from": "task/TSK-0985DBA9", "to": "task/TSK-5A434477", "width": 1}, {"_from": "task/TSK-01D25D85", "_id": "task_depends_on/10112048", "_key": "10112048", "_to": "task/TSK-CB0C0404", "arrows": "to", "from": "task/TSK-CB0C0404", "to": "task/TSK-01D25D85", "width": 1}, {"_from": "task/TSK-3BA37747", "_id": "task_depends_on/10112061", "_key": "10112061", "_to": "task/TSK-CB0C0404", "arrows": "to", "from": "task/TSK-CB0C0404", "to": "task/TSK-3BA37747", "width": 1}, {"_from": "task/TSK-5C2187CF", "_id": "task_depends_on/10112034", "_key": "10112034", "_to": "task/TSK-CB0C0404", "arrows": "to", "from": "task/TSK-CB0C0404", "to": "task/TSK-5C2187CF", "width": 1}, {"_from": "task/TSK-427652F3", "_id": "task_depends_on/10112056", "_key": "10112056", "_to": "task/TSK-CB0C0404", "arrows": "to", "from": "task/TSK-CB0C0404", "to": "task/TSK-427652F3", "width": 1}, {"_from": "task/TSK-BE4188D4", "_id": "task_depends_on/10112080", "_key": "10112080", "_to": "task/TSK-E73A7D25", "arrows": "to", "from": "task/TSK-BE4188D4", "to": "task/TSK-E73A7D25", "width": 1}, {"_from": "task/TSK-763CE1C3", "_id": "task_depends_on/10112040", "_key": "10112040", "_to": "task/TSK-A8A24727", "arrows": "to", "from": "task/TSK-A8A24727", "to": "task/TSK-763CE1C3", "width": 1}, {"_from": "task/TSK-5C2187CF", "_id": "task_depends_on/10112033", "_key": "10112033", "_to": "task/TSK-A8A24727", "arrows": "to", "from": "task/TSK-A8A24727", "to": "task/TSK-5C2187CF", "width": 1}, {"_from": "task/TSK-427652F3", "_id": "task_depends_on/10112057", "_key": "10112057", "_to": "task/TSK-A8A24727", "arrows": "to", "from": "task/TSK-A8A24727", "to": "task/TSK-427652F3", "width": 1}, {"_from": "task/TSK-3BA37747", "_id": "task_depends_on/10112060", "_key": "10112060", "_to": "task/TSK-427652F3", "arrows": "to", "from": "task/TSK-3BA37747", "to": "task/TSK-427652F3", "width": 1}, {"_from": "task/TSK-01D25D85", "_id": "task_depends_on/10112046", "_key": "10112046", "_to": "task/TSK-E6CFDD02", "arrows": "to", "from": "task/TSK-01D25D85", "to": "task/TSK-E6CFDD02", "width": 1}, {"_from": "task/TSK-BE9555AC", "_id": "task_depends_on/10112123", "_key": "10112123", "_to": "task/TSK-F51C17B5", "arrows": "to", "from": "task/TSK-BE9555AC", "to": "task/TSK-F51C17B5", "width": 1}, {"_from": "task/TSK-8CD3CA3E", "_id": "task_depends_on/10112128", "_key": "10112128", "_to": "task/TSK-FAAA4D51", "arrows": "to", "from": "task/TSK-FAAA4D51", "to": "task/TSK-8CD3CA3E", "width": 1}, {"_from": "task/TSK-89BBB564", "_id": "task_depends_on/10112154", "_key": "10112154", "_to": "task/TSK-FAAA4D51", "arrows": "to", "from": "task/TSK-FAAA4D51", "to": "task/TSK-89BBB564", "width": 1}, {"_from": "task/TSK-29CE08AD", "_id": "task_depends_on/10112155", "_key": "10112155", "_to": "task/TSK-5A434477", "arrows": "to", "from": "task/TSK-29CE08AD", "to": "task/TSK-5A434477", "width": 1}, {"_from": "task/TSK-29CE08AD", "_id": "task_depends_on/10112156", "_key": "10112156", "_to": "task/TSK-89BBB564", "arrows": "to", "from": "task/TSK-29CE08AD", "to": "task/TSK-89BBB564", "width": 1}, {"_from": "task/TSK-29CE08AD", "_id": "task_depends_on/10112157", "_key": "10112157", "_to": "task/TSK-C2D38D23", "arrows": "to", "from": "task/TSK-29CE08AD", "to": "task/TSK-C2D38D23", "width": 1}, {"_from": "task/TSK-89806FDF", "_id": "task_depends_on/10112158", "_key": "10112158", "_to": "task/TSK-29CE08AD", "arrows": "to", "from": "task/TSK-29CE08AD", "to": "task/TSK-89806FDF", "width": 1}, {"_from": "task/TSK-427652F3", "_id": "task_depends_on/10112055", "_key": "10112055", "_to": "task/TSK-E6CFDD02", "arrows": "to", "from": "task/TSK-427652F3", "to": "task/TSK-E6CFDD02", "width": 1}, {"_from": "task/TSK-84305F2F", "_id": "task_depends_on/10112074", "_key": "10112074", "_to": "task/TSK-E73A7D25", "arrows": "to", "from": "task/TSK-E73A7D25", "to": "task/TSK-84305F2F", "width": 1}, {"_from": "task/TSK-C2D38D23", "_id": "task_depends_on/10112147", "_key": "10112147", "_to": "task/TSK-DFB54467", "arrows": "to", "from": "task/TSK-C2D38D23", "to": "task/TSK-DFB54467", "width": 1}, {"_from": "task/TSK-89BBB564", "_id": "task_depends_on/10112153", "_key": "10112153", "_to": "task/TSK-C2D38D23", "arrows": "to", "from": "task/TSK-C2D38D23", "to": "task/TSK-89BBB564", "width": 1}, {"_from": "task/TSK-8CD3CA3E", "_id": "task_depends_on/10112129", "_key": "10112129", "_to": "task/TSK-EBA1C369", "arrows": "to", "from": "task/TSK-8CD3CA3E", "to": "task/TSK-EBA1C369", "width": 1}, {"_from": "task/TSK-89806FDF", "_id": "task_depends_on/10112160", "_key": "10112160", "_to": "task/TSK-8CD3CA3E", "arrows": "to", "from": "task/TSK-8CD3CA3E", "to": "task/TSK-89806FDF", "width": 1}, {"_from": "task/TSK-46138F7D", "_id": "task_depends_on/10112165", "_key": "10112165", "_to": "task/TSK-DFB54467", "arrows": "to", "from": "task/TSK-46138F7D", "to": "task/TSK-DFB54467", "width": 1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "barnesHut": {
+            "avoidOverlap": 0,
+            "centralGravity": 0.3,
+            "damping": 0.09,
+            "gravitationalConstant": -80000,
+            "springConstant": 0.001,
+            "springLength": 250
+        },
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>

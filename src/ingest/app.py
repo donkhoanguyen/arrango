@@ -88,7 +88,8 @@ def employee_interaction_graph():
     # Render the component
     st.markdown("### Employee Interaction Network")
 
-    st_link_analysis(elements, "cose", node_styles, edge_styles)
+    # TODO: Might be a good place to do graphrag here
+    st_link_analysis(elements, "grid", node_styles, edge_styles)
 
 selected_graph_view = os.environ["SELECTED_GRAPH_VIEW"] if "SELECTED_GRAPH_VIEW" in os.environ else "Employee Interaction"
 

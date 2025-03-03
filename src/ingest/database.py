@@ -50,6 +50,14 @@ def get_all_employees():
 def get_employee_interact_graph():
     return nxadb.Graph(name="employee_interaction")
 
+        
+SENIORITY_LABEL_MAP = {
+    "Lead": "Lead",
+    "Senior": "SeniorEmployee",
+    "Mid-Level": "MidLevelEmployee",
+    "Junior": "JuniorEmployee"
+}
+
 def retrieve_employee_interaction_graph(emp_interact_graph, emp_info_dict):
 
     employee_information = get_all_employees()
@@ -58,17 +66,24 @@ def retrieve_employee_interaction_graph(emp_interact_graph, emp_info_dict):
     
     for employee_node in emp_interact_graph.nodes:
         employee_info = emp_info_dict[employee_node]
+        seniority = employee_info["Seniority"] 
+
+
         nodes.append({
             "data": {
                 "id": employee_node, 
-                "label": "Employee",
+                "label": SENIORITY_LABEL_MAP.get(seniority, "Employee"),
                 "name": f"{employee_info['FirstName']} {employee_info['LastName']}",
                 **employee_information[employee_node]
             }
         })
     # Style node & edge groups
     node_styles = [
-        NodeStyle("Employee", "#FF7F3E", "name", "person"),
+        NodeStyle("Lead", "#FF7F3E", "name", "person"),           # Orange
+        NodeStyle("SeniorEmployee", "#4CAF50", "name", "person"), # Green
+        NodeStyle("MidLevelEmployee", "#2196F3", "name", "person"), # Blue
+        NodeStyle("JuniorEmployee", "#FFC107", "name", "person"), # Amber
+        NodeStyle("Employee", "#9C27B0", "name", "person"),       # Purple
     ]
     for emp_from, emp_to in emp_interact_graph.edges:
         if (emp_from == "employee/0" or emp_to == "employee/0"):

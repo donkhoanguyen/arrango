@@ -23,7 +23,7 @@ def employee_tile(employee):
             </p>
         </div>
         """, unsafe_allow_html=True)
-    col1, col2= st.columns([1,1])
+    col1, col2, _= st.columns(3)
 
     with col1:
         if st.button("ℹ️ More info", key=f"more_info/employee{employee['EmpID']}"):
@@ -32,7 +32,7 @@ def employee_tile(employee):
         if st.button('✨ Magic Ask', key=f"magic_ask/employee{employee['EmpID']}"):
             magic_ask_employee(employee)
        
-    
+    st.markdown("---")
 
 def get_status_color(status):
     """Returns a color for the status tag."""
@@ -75,7 +75,7 @@ def task_tile(task):
     )
 
     
-    col1, col2= st.columns([1,1])
+    col1, col2, _ = st.columns(3)
 
     with col1:
         if st.button("ℹ️ More info", key=f"more_info/task{task['TaskID']}"):
@@ -83,6 +83,8 @@ def task_tile(task):
     with col2:
         if st.button('✨ Magic Ask', key=f"magic_ask/task{task['TaskID']}"):
             magic_ask_task(task)
+    
+    st.markdown("---")
 
 @st.dialog("Magic Ask Employee")
 def magic_ask_employee(employee):

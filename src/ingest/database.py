@@ -17,6 +17,20 @@ db = client.db(
     username=os.environ["DATABASE_USERNAME"],
     password=os.environ["DATABASE_PASSWORD"]
 )
+        
+SENIORITY_LABEL_MAP = {
+    "Lead": "Lead",
+    "Senior": "SeniorEmployee",
+    "Mid-Level": "MidLevelEmployee",
+    "Junior": "JuniorEmployee"
+}
+
+TASK_STATUS_LABEL_MAP = {
+    "Planned": "PlannedTask",
+    "In Progress": "InProgressTask",
+    "Completed": "CompletedTask",
+    "Blocked": "BlockedTask"
+}
 
 # Function to get all employee information as a dictionary with EmpID as the key
 def get_all_employees():
@@ -85,20 +99,6 @@ def get_task_dependence_graph():
     return nxadb.DiGraph(name="tasks_sprint1")
 
 
-        
-SENIORITY_LABEL_MAP = {
-    "Lead": "Lead",
-    "Senior": "SeniorEmployee",
-    "Mid-Level": "MidLevelEmployee",
-    "Junior": "JuniorEmployee"
-}
-
-TASK_STATUS_LABEL_MAP = {
-    "Planned": "PlannedTask",
-    "In Progress": "InProgressTask",
-    "Complete": "CompleteTask",
-    "Blocked": "BlockedTask"
-}
 
 def retrieve_employee_interaction_graph(emp_interact_graph, emp_info_dict):
     nodes = []
@@ -151,13 +151,6 @@ def retrieve_task_dependence_graph(task_interact_graph, task_info_dict):
     nodes = []
     edges = []
     
-    if nx.is_directed_acyclic_graph(task_interact_graph):
-        print("Yup")
-    else:
-        print("FUck")
-    topological_order = list(nx.topological_sort(task_interact_graph))
-    print("Topological Sort:", topological_order)
-
     for task_node in task_interact_graph.nodes:
         task_info = task_info_dict[task_node]
 
@@ -173,7 +166,7 @@ def retrieve_task_dependence_graph(task_interact_graph, task_info_dict):
     node_styles = [
         NodeStyle("PlannedTask", "#d3d3d3", "name", "person"),           # Orange
         NodeStyle("InProgressTask", "#f39c12", "name", "person"), # Green
-        NodeStyle("CompleteTask", "#2ecc71", "name", "person"), # Blue
+        NodeStyle("CompletedTask", "#2ecc71", "name", "person"), # Blue
         NodeStyle("BlockedTask", "#e74c3c", "name", "person"), # Amber
     ]
     for task_from, task_to in task_interact_graph.edges:

@@ -150,60 +150,40 @@ with col1:
     st.selectbox("employee_stat", ["Current Employees", "Active Employees"], label_visibility="collapsed")
     summary_tile("Current Employees", len(emp_info_dict), "Total number of employees in this project.", "#FF7F3E")
 
-    st.markdown("---")
-    st.markdown(f"### Active Employees ({len(emp_info_dict)})")
-
-    # Create a scrollable container
-    container = st.container(height=400)
-    with container:
-        # Add the scrollable box styling using custom HTML/CSS
-        st.markdown("""
-        <style>
-            .scrollable-box {
-                max-height: 400px;
-                overflow-y: auto;
-                padding: 10px;
-                border-radius: 10px;
-                border: 2px solid #e0e0e0;
-            }
-        </style>
-        """, unsafe_allow_html=True)
-
-        # Create a div with a scrollable class
-        for empID in emp_info_dict:
-            employee_tile(emp_info_dict[empID])
 
 
 # Second column: Summary tile + Information
 with col2:
     st.selectbox("task_stat", ["Remaining Tasks", "Active Tasks", "Total Story Points", "Remaining Story Points"], label_visibility="collapsed")
-    summary_tile("Remaining Tasks", "20", "Remaining number of tasks.", "#4CAF50")
+    summary_tile("Remaining Tasks", len(task_info_dict), "Remaining number of tasks.", "#4CAF50")
 
-    st.markdown("---")
-    st.markdown(f"### Active Tasks({len(emp_info_dict)})")
-
-    # Create a scrollable container
-    container = st.container(height=400)
-    with container:
-        # Add the scrollable box styling using custom HTML/CSS
-        st.markdown("""
-        <style>
-            .scrollable-box {
-                max-height: 400px;
-                overflow-y: auto;
-                padding: 10px;
-                border-radius: 10px;
-                border: 2px solid #e0e0e0;
-            }
-        </style>
-        """, unsafe_allow_html=True)
-
-        # Create a div with a scrollable class
-        for taskID in task_info_dict:
-            task_tile(task_info_dict[taskID])
 
 # Third column: Summary tile + Information
 with col3:
     st.selectbox("project_stat", ["Project Deadline", "Project Monetary Value"], label_visibility="collapsed")
     summary_tile("Project Deadline", "03/06/2025", "Date where the project has to deliver.", "#2196F3")
 
+st.markdown("---")
+
+emp_col, task_col = st.columns(2)
+
+with emp_col:
+
+    st.markdown(f"### Active Employees ({len(emp_info_dict)})")
+
+    # Create a scrollable container
+    container = st.container(height=800)
+    with container:
+        # Create a div with a scrollable class
+        for empID in emp_info_dict:
+            employee_tile(emp_info_dict[empID])
+
+with task_col:
+    st.markdown(f"### Active Tasks({len(emp_info_dict)})")
+
+    # Create a scrollable container
+    container = st.container(height=800)
+    with container:
+        # Create a div with a scrollable class
+        for taskID in task_info_dict:
+            task_tile(task_info_dict[taskID])

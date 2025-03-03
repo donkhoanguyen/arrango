@@ -24,7 +24,8 @@ if "emp_info_dict" not in st.session_state:
 if "emp_interact_graph" not in st.session_state:
     st.session_state.emp_interact_graph = db.get_employee_interact_graph()
 
-
+if "main_graph_view" not in st.session_state:
+    st.session_state.main_graph_view = "Employee Interaction"
 
 # --- Page Layout ---
 st.set_page_config(layout="wide")  # Set to full-screen mode
@@ -91,13 +92,11 @@ def employee_interaction_graph():
     # TODO: Might be a good place to do graphrag here
     st_link_analysis(elements, "grid", node_styles, edge_styles)
 
-selected_graph_view = os.environ["SELECTED_GRAPH_VIEW"] if "SELECTED_GRAPH_VIEW" in os.environ else "Employee Interaction"
-
-if selected_graph_view == "Employee Interaction":
-    employee_interaction_graph()
-elif selected_graph_view == "Project Overview":
+if st.session_state.main_graph_view == "Employee Interaction":
+    with st.spinner("Retrieving your graph..."):
+        employee_interaction_graph()
+elif st.session_state.main_graph_view == "Project Overview":
     st.write("Insert graph here")
 
-
-os.environ["SELECTED_GRAPH_VIEW"]= st.selectbox("Choose a Graph View", ["Employee Interaction", "Project Overview"])
+st.session_state.main_graph_view = st.selectbox("Choose a Graph View", ["Employee Interaction", "Project Overview"])
 

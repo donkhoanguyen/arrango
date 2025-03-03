@@ -81,11 +81,18 @@ def task_tile(task):
         if st.button("ℹ️ More info", key=f"more_info/task{task['TaskID']}"):
             task_modal(task)
     with col2:
-        st.button('✨ Magic Ask', key=f"magic_ask/task{task['TaskID']}")
+        if st.button('✨ Magic Ask', key=f"magic_ask/task{task['TaskID']}"):
+            magic_ask_task(task)
 
 @st.dialog("Magic Ask Employee")
 def magic_ask_employee(employee):
     st.chat_input(f"What do you want to ask about {employee['FirstName']}?")
+    # TODO: Implement CPM and HITS Promotion Analysis here
+
+@st.dialog("Magic Ask Task")
+def magic_ask_task(task):
+    st.chat_input(f"What do you want to ask about Task {task['TaskID']}?")
+    # TODO: Implement CPM and HITS Promotion Analysis here
 
 @st.dialog("Employee Information")
 def employee_modal(employee):

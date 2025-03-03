@@ -1,3 +1,4 @@
+import json
 import streamlit as st
 import networkx as nx
 import fitz  # PyMuPDF
@@ -84,9 +85,9 @@ def employee_interaction_graph():
         st.session_state.emp_interact_graph,
         st.session_state.emp_info_dict 
     )
-    print(elements)
     # Render the component
     st.markdown("### Employee Interaction Network")
+
     st_link_analysis(elements, "cose", node_styles, edge_styles)
 
 selected_graph_view = os.environ["SELECTED_GRAPH_VIEW"] if "SELECTED_GRAPH_VIEW" in os.environ else "Employee Interaction"

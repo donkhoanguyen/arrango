@@ -71,9 +71,11 @@ def retrieve_employee_interaction_graph(emp_interact_graph, emp_info_dict):
         NodeStyle("Employee", "#FF7F3E", "name", "person"),
     ]
     for emp_from, emp_to in emp_interact_graph.edges:
+        if (emp_from == "employee/0" or emp_to == "employee/0"):
+            continue
         edges.append({
             "data": {
-                "id": f"{emp_from}/{emp_to}",
+                "id": f"{emp_from}->{emp_to}",
                 "label": "Interact",
                 "source": emp_from,
                 "target": emp_to,

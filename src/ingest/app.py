@@ -5,6 +5,11 @@ import fitz  # PyMuPDF
 import tempfile
 import os
 
+from langchain_openai.chat_models import ChatOpenAI
+from langchain.schema import HumanMessage, AIMessage, SystemMessage
+from langchain.memory import ConversationBufferMemory
+from langchain.chains import ConversationChain
+
 # --- Initialize session state ---
 if "graph" not in st.session_state:
     st.session_state.graph = nx.Graph()
@@ -18,9 +23,11 @@ if "documents_text" not in st.session_state:
 # --- Page Layout ---
 st.set_page_config(layout="wide")  # Set to full-screen mode
 
-# Sidebar for Upload
+# Sidebar for Upload and API Key
+os.environ["OPENAI_API_KEY"] = st.sidebar.text_input("OpenAI API Key", type="password")
+
 st.sidebar.title("Upload Documents")
-uploaded_files = st.sidebar.file_uploader("Upload project-related documents (PDF only)", 
+uploaded_files = st.sidebar.file_uploader("Upload project-related documents (PDF only)",
                                           accept_multiple_files=True, type=["pdf"])
 
 # --- Function to extract text from PDFs ---
@@ -47,44 +54,71 @@ if st.sidebar.button("Generate Graph"):
     else:
         st.sidebar.warning("Please upload at least one PDF file.")
 
-# Create two columns: Left (1/3) for chatbot, Right (2/3) for graph
-left_col, right_col = st.columns([1, 2])
+
+# Methods for Chatbot UI
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+st.session_state["openai_model"] = "gpt-4o"
+
+# Initialize ChatOpenAI with a default API key (or None)
+llm = ChatOpenAI(
+    model=st.session_state["openai_model"],
+    streaming=True,
+    temperature=0,
+)
+
+# Initialize ConversationBufferMemory
+memory = ConversationBufferMemory(return_messages=True)
+
+# Initialize ConversationChain
+conversation = ConversationChain(
+    llm=llm,
+    memory=memory,
+    verbose=False
+)
 
 # --- Left Panel (Chatbot UI) ---
-with left_col:
-    st.title("Interactive GraphRAG ETL")
-    st.write("Upload your project-related documents for processing and modify them here.")
+st.title("Interactive GraphRAG ETL")
+st.write("Upload your project-related documents for processing and modify them here.")
 
-    # Chat History (display chat bubbles at top)
-    chat_history_str = "\\n".join(st.session_state.chat_history)
-    st.text_area("", chat_history_str, height=300, disabled=True)
+if not os.environ["OPENAI_API_KEY"] .startswith("sk-"):
+    st.warning("Please enter your OpenAI API key!", icon="⚠")
 
-    # User input for chatbot at the bottom
-    user_input = st.text_input("You:", "")
-    if st.button("Send"):
-        if user_input:
-            response = f"Processing: {user_input}"  # Placeholder chatbot response
-            st.session_state.chat_history.append(f"You: {user_input}")
-            st.session_state.chat_history.append(f"Bot: {response}")
 
-# --- Right Panel (Graph Visualization) ---
-with right_col:
-    # Save Pyvis network to an HTML file
-    def draw_graph(graph):
-        net = Network(height="700px", width="100%", notebook=False, bgcolor="#ffffff", font_color="black")
-        net.from_nx(graph)
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp_file:
-            net.save_graph(tmp_file.name)
-            return tmp_file.name
+if prompt := st.chat_input("Enter your query here"):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    response = conversation.predict(input=prompt)
 
-    if st.session_state.graph.nodes:
-        graph_html = draw_graph(st.session_state.graph)
-        with open(graph_html, "r", encoding="utf-8") as file:
-            st.components.v1.html(file.read(), height=700, scrolling=False)
-        os.unlink(graph_html)  # Cleanup
-    else:
-        st.write("No graph to display. Upload files and generate a graph.")
+    st.session_state.messages.append({"role": "assistant", "content": response})
+
+    # Update the conversation memory
+    conversation.memory.chat_memory.messages = [
+        SystemMessage(content="You are a helpful assistant."),
+        *[HumanMessage(content=m["content"]) if m["role"] == "user" else AIMessage(content=m["content"])
+            for m in st.session_state.messages]
+    ]
+
+# Save Pyvis network to an HTML file
+def draw_graph(graph):
+    net = Network(height="700px", width="100%", notebook=False, bgcolor="#ffffff", font_color="black")
+    net.from_nx(graph)
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp_file:
+        net.save_graph(tmp_file.name)
+        return tmp_file.name
+
+if st.session_state.graph.nodes:
+    graph_html = draw_graph(st.session_state.graph)
+    with open(graph_html, "r", encoding="utf-8") as file:
+        st.components.v1.html(file.read(), height=700, scrolling=False)
+    os.unlink(graph_html)  # Cleanup
+else:
+    st.write("No graph to display. Upload files and generate a graph.")
 
 # Debug: Show extracted text from PDFs
 if st.sidebar.checkbox("Show Extracted Text"):

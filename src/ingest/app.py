@@ -118,6 +118,8 @@ def task_dependence_graph():
         # TODO: Might be a good place to do graphrag here
         st_link_analysis(elements, layout_options, node_styles, edge_styles)
 
+st.session_state.main_graph_view = st.selectbox("Choose a graph view", ["Employee Interaction", "Task Dependence"])
+
 if st.session_state.main_graph_view == "Employee Interaction":
     with st.spinner("Retrieving your employees..."):
         employee_interaction_graph()
@@ -125,7 +127,6 @@ elif st.session_state.main_graph_view == "Task Dependence":
     with st.spinner("Retrieving your tasks..."):
         task_dependence_graph()
 
-st.session_state.main_graph_view = st.selectbox("Choose a graph view", ["Employee Interaction", "Task Dependence"])
 
 # Project Overview Section
 st.markdown("### Overview")

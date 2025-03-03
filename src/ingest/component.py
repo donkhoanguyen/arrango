@@ -192,3 +192,7 @@ def task_modal(task):
     # Notes (Optional)
     st.markdown("### Notes")
     st.markdown("Add any relevant details or comments about this task.")
+
+def accordion_graph_chatbot(G):
+    with st.expander("✨ Ask about this graph!"):
+        st.chat_input("Hello")

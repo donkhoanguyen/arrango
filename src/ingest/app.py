@@ -94,38 +94,44 @@ is_ready = True
 if not is_ready:
     st.stop()
 
-def employee_interaction_graph():
+def render_employee_interaction_graph():
+    emp_interact_graph = st.session_state.emp_interact_graph,
     elements, node_styles, edge_styles = db.retrieve_employee_interaction_graph(
-        st.session_state.emp_interact_graph,
+        emp_interact_graph,
         st.session_state.emp_info_dict 
     )
+
     # Render the component
     st.markdown("### Employee Interaction Network")
-
     # TODO: Might be a good place to do graphrag here
     st_link_analysis(elements, "grid", node_styles, edge_styles)
 
-def task_dependence_graph():
+    accordion_graph_chatbot(emp_interact_graph)
+
+def render_task_dependence_graph():
+    task_depend_graph = st.session_state.task_depend_graph
     elements, node_styles, edge_styles = db.retrieve_task_dependence_graph(
-        st.session_state.task_depend_graph,
+        task_depend_graph,
         st.session_state.task_info_dict
     )
+
     # Render the component
     st.markdown("### Task Dependence Network")
-
     with st.spinner("Calculating task layers..."):
         layout_options = graph.topo_sort_layered_layout(st.session_state.task_depend_graph)
         # TODO: Might be a good place to do graphrag here
         st_link_analysis(elements, layout_options, node_styles, edge_styles)
+    
+    accordion_graph_chatbot(task_depend_graph)
 
 st.session_state.main_graph_view = st.selectbox("Choose a graph view", ["Employee Interaction", "Task Dependence"])
 
 if st.session_state.main_graph_view == "Employee Interaction":
     with st.spinner("Retrieving your employees..."):
-        employee_interaction_graph()
+        render_employee_interaction_graph()
 elif st.session_state.main_graph_view == "Task Dependence":
     with st.spinner("Retrieving your tasks..."):
-        task_dependence_graph()
+        render_task_dependence_graph()
 
 
 # Project Overview Section

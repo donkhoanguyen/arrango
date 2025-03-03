@@ -1,9 +1,11 @@
 import streamlit as st
 import networkx as nx
-from st_link_analysis import st_link_analysis, NodeStyle, EdgeStyle
 import fitz  # PyMuPDF
 import tempfile
 import os
+import database as db
+
+from st_link_analysis import st_link_analysis, NodeStyle, EdgeStyle
 
 # --- Initialize session state ---
 if "graph" not in st.session_state:
@@ -14,6 +16,14 @@ if "chat_history" not in st.session_state:
 
 if "documents_text" not in st.session_state:
     st.session_state.documents_text = []
+
+if "emp_info_dict" not in st.session_state:
+    st.session_state.emp_info_dict = db.get_all_employees()
+
+if "emp_interact_graph" not in st.session_state:
+    st.session_state.emp_interact_graph = db.get_employee_interact_graph()
+
+
 
 # --- Page Layout ---
 st.set_page_config(layout="wide")  # Set to full-screen mode
@@ -70,36 +80,11 @@ if not is_ready:
     st.stop()
 
 def employee_interaction_graph():
-    # Sample Data
-    elements = {
-        "nodes": [
-            {"data": {"id": 1, "label": "PERSON", "name": "Streamlit"}},
-            {"data": {"id": 2, "label": "PERSON", "name": "Hello"}},
-            {"data": {"id": 3, "label": "PERSON", "name": "World"}},
-            {"data": {"id": 4, "label": "POST", "content": "x"}},
-            {"data": {"id": 5, "label": "POST", "content": "y"}},
-        ],
-        "edges": [
-            {"data": {"id": 6, "label": "FOLLOWS", "source": 1, "target": 2}},
-            {"data": {"id": 7, "label": "FOLLOWS", "source": 2, "target": 3}},
-            {"data": {"id": 8, "label": "POSTED", "source": 3, "target": 4}},
-            {"data": {"id": 9, "label": "POSTED", "source": 1, "target": 5}},
-            {"data": {"id": 10, "label": "QUOTES", "source": 5, "target": 4}},
-        ],
-    }
-
-    # Style node & edge groups
-    node_styles = [
-        NodeStyle("PERSON", "#FF7F3E", "name", "person"),
-        NodeStyle("POST", "#2A629A", "content", "description"),
-    ]
-
-    edge_styles = [
-        EdgeStyle("FOLLOWS", caption='label', directed=True),
-        EdgeStyle("POSTED", caption='label', directed=True),
-        EdgeStyle("QUOTES", caption='label', directed=True),
-    ]
-
+    elements, node_styles, edge_styles = db.retrieve_employee_interaction_graph(
+        st.session_state.emp_interact_graph,
+        st.session_state.emp_info_dict 
+    )
+    print(elements)
     # Render the component
     st.markdown("### Employee Interaction Network")
     st_link_analysis(elements, "cose", node_styles, edge_styles)
@@ -113,3 +98,4 @@ elif selected_graph_view == "Project Overview":
 
 
 os.environ["SELECTED_GRAPH_VIEW"]= st.selectbox("Choose a Graph View", ["Employee Interaction", "Project Overview"])
+

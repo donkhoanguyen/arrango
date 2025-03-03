@@ -149,11 +149,14 @@ def employee_tile(employee):
             </p>
         </div>
         """, unsafe_allow_html=True)
+    if st.button("More info", key=f"more_info/employee{employee['EmpID']}"):
+        employee_modal(employee)
+    
 
 def get_status_color(status):
     """Returns a color for the status tag."""
     status_colors = {
-        "Not Started": "#d3d3d3",  # Gray
+        "Planned": "#d3d3d3",  # Gray
         "In Progress": "#f39c12",  # Orange
         "Completed": "#2ecc71",    # Green
         "Blocked": "#e74c3c",      # Red
@@ -167,6 +170,7 @@ def task_tile(task):
     st.markdown(
         f"""
         <div style="
+            background: #f5f5f5;
             border: 1px solid #ddd;
             border-radius: 8px;
             padding: 10px;
@@ -196,14 +200,43 @@ def task_tile(task):
         unsafe_allow_html=True
     )
 
-# @st.dialog("Employee Information")
-# def vote(emp_info):
-#     st.markdown(f"### {}")
-#     st.write(f"Why is {item} your favorite?")
-#     reason = st.text_input("Because...")
-#     if st.button("Submit"):
-#         st.session_state.vote = {"item": item, "reason": reason}
-#         st.rerun()
+@st.dialog("Employee Information")
+def employee_modal(employee):
+    # Creating a modal-like layout for employee information
+    st.markdown(f"## Employee: {employee['FirstName']} {employee['LastName']}")
+    st.markdown(f"### Employee ID: {employee['EmpID']}")
+    
+    # Employee Details Section
+    st.markdown("### Employee Details")
+    st.markdown(f"**First Name**: {employee['FirstName']}")
+    st.markdown(f"**Last Name**: {employee['LastName']}")
+    st.markdown(f"**Email**: {employee['Email']}")
+    st.markdown(f"**Role**: {employee['Role']}")
+    st.markdown(f"**Department**: {employee['Department']}")
+    st.markdown(f"**Team**: {employee['Team']}")
+    st.markdown(f"**Seniority Level**: {employee['Seniority']}")
+    
+    # Salary and Hire Date Section
+    st.markdown("### Salary and Hire Date")
+    st.markdown(f"**Salary**: {employee['Salary']}")
+    st.markdown(f"**Hire Date**: {employee['HireDate']}")
+    
+    # Manager Section
+    if employee['ManagerID']:
+        st.markdown("### Manager Information")
+        st.markdown(f"**Manager ID**: {employee['ManagerID']}")
+    else:
+        st.markdown("### Manager Information")
+        st.markdown("This employee doesn't have a manager listed.")
+    
+    # Optional: Adding a divider for separation
+    st.markdown("---")
+    
+    # Additional Notes Section (Optional)
+    st.markdown("### Notes")
+    st.markdown("You can add additional information or notes about the employee here.")
+    st.markdown("For example, performance reviews, special achievements, or other remarks.")
+
 
 # First column: Summary tile + Information
 with col1:
@@ -259,8 +292,8 @@ with col2:
         """, unsafe_allow_html=True)
 
         # Create a div with a scrollable class
-        for empID in emp_info_dict:
-            employee_tile(emp_info_dict[empID])
+        for taskID in task_info_dict:
+            task_tile(task_info_dict[taskID])
 
 # Third column: Summary tile + Information
 with col3:

@@ -47,6 +47,34 @@ def get_all_employees():
     
     return employee_dict
 
+# Function to get all task information as a dictionary with as TaskID the key
+def get_all_tasks():
+    task_collection = db.collection('task')  # Ensure this is the correct collection name
+    
+    # Fetch all employees from the collection
+    tasks = task_collection.all()  # Fetches all documents in the collection
+    
+    # Create a dictionary to store employee info with EmpID as the key
+    task_dict = {}
+    
+    for task in tasks:
+        # Build employee info dictionary
+        task_info = {
+            "TaskID": task["_key"],
+            "Description": task.get("Description"),
+            "AssignedEmployees": task.get("AssignedEmployees", []),
+            "Advisors": task.get("Advisors", []),
+            "PrecedingTasks": task.get("PrecedingTasks", []),
+            "StoryPoints": task.get("StoryPoints"),
+            "StartTime": task.get("StartTime"),
+            "EstimatedFinishTime": task.get("EstimatedFinishTime"),
+            "Status": task.get("Status"),
+            "ActualFinishTime": task.get("ActualFinishTime")
+        }
+        task_dict[f"task/{task['_key']}"] = task_info
+    
+    return task_dict
+
 def get_employee_interact_graph():
     return nxadb.Graph(name="employee_interaction")
 

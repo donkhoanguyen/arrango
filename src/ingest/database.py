@@ -17,13 +17,6 @@ db = client.db(
     username=os.environ["DATABASE_USERNAME"],
     password=os.environ["DATABASE_PASSWORD"]
 )
-        
-SENIORITY_LABEL_MAP = {
-    "Lead": "Lead",
-    "Senior": "SeniorEmployee",
-    "Mid-Level": "MidLevelEmployee",
-    "Junior": "JuniorEmployee"
-}
 
 TASK_STATUS_LABEL_MAP = {
     "Planned": "PlannedTask",
@@ -108,21 +101,22 @@ def retrieve_employee_interaction_graph(emp_interact_graph, emp_info_dict):
         employee_info = emp_info_dict[employee_node]
         seniority = employee_info["Seniority"] 
 
-
         nodes.append({
             "data": {
                 "id": employee_node, 
-                "label": SENIORITY_LABEL_MAP.get(seniority, "Employee"),
+                "label": seniority,
                 "name": f"{employee_info['FirstName']} {employee_info['LastName']}",
                 **emp_info_dict[employee_node]
             }
         })
     # Style node & edge groups
     node_styles = [
+        NodeStyle("Director", "#FF5722", "name", "person"),           # Coral
+        NodeStyle("Vice-Director", "#E91E63", "name", "person"),      # Pink
         NodeStyle("Lead", "#FF7F3E", "name", "person"),           # Orange
-        NodeStyle("SeniorEmployee", "#4CAF50", "name", "person"), # Green
-        NodeStyle("MidLevelEmployee", "#2196F3", "name", "person"), # Blue
-        NodeStyle("JuniorEmployee", "#FFC107", "name", "person"), # Amber
+        NodeStyle("Senior", "#4CAF50", "name", "person"), # Green
+        NodeStyle("Mid-Level", "#2196F3", "name", "person"), # Blue
+        NodeStyle("Junior", "#FFC107", "name", "person"), # Amber
         NodeStyle("Employee", "#9C27B0", "name", "person"),       # Purple
     ]
     for emp_from, emp_to in emp_interact_graph.edges:

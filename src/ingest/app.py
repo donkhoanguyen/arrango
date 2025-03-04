@@ -10,6 +10,11 @@ import graph
 from component import *
 from st_link_analysis import st_link_analysis, NodeStyle, EdgeStyle
 
+VIEW_BY_GRAPH_CHOICE = {
+    "Employee Interaction": ["Default (by hierarchy)", "Grid", "✨ Magic View"],
+    "Task Dependence": ["Default (by layers)", "Grid", "✨ Magic View"]
+}
+
 # --- Page Layout ---
 st.set_page_config(layout="wide")  # Set to full-screen mode
 
@@ -40,8 +45,11 @@ if "task_depend_graph" not in st.session_state:
     with st.spinner("Retrieving task dependence graph..."):
         st.session_state.task_depend_graph = db.get_task_dependence_graph()
 
+if "main_graph_choice" not in st.session_state:
+    st.session_state.main_graph_choice = "Task Dependence"
+
 if "main_graph_view" not in st.session_state:
-    st.session_state.main_graph_view = "Task Dependence"
+    st.session_state.main_graph_view = VIEW_BY_GRAPH_CHOICE[st.session_state.main_graph_choice][0]
 
 # Sidebar for Upload and API Key
 os.environ["OPENAI_API_KEY"] = st.sidebar.text_input("OpenAI API Key", type="password")
@@ -103,33 +111,71 @@ def render_employee_interaction_graph():
 
     # Render the component
     st.markdown("### Employee Interaction Network")
+
+    with st.spinner("Calculating employee view..."):
+        # Retrieve graph choices
+        graph_view = st.session_state.main_graph_view
+        graph_choice = st.session_state.main_graph_choice
+        graph_view_by_choice = VIEW_BY_GRAPH_CHOICE[graph_choice]
+        
+        # Switch graph_view then render accordingly
+        if graph_view == graph_view_by_choice[0]:
+            layout_options = graph.get_layout_for_seniority_layers(emp_interact_graph)
+        elif graph_view == graph_view_by_choice[1]:
+            layout_options = "grid"
+        elif graph_view == graph_view_by_choice[-1]:
+            # TODO: Implement magic view here
+            st.warning("Magic View not implemented yet")
+            layout_options = "cose"
+    
     # TODO: Might be a good place to do graphrag here
-    st_link_analysis(elements, "grid", node_styles, edge_styles)
+    st_link_analysis(elements, layout_options, node_styles, edge_styles)
 
     accordion_graph_chatbot(emp_interact_graph)
 
 def render_task_dependence_graph():
+    
     task_depend_graph = st.session_state.task_depend_graph
     elements, node_styles, edge_styles = db.retrieve_task_dependence_graph(
         task_depend_graph,
         st.session_state.task_info_dict
     )
-
+        
     # Render the component
     st.markdown("### Task Dependence Network")
-    with st.spinner("Calculating task layers..."):
-        layout_options = graph.topo_sort_layered_layout(st.session_state.task_depend_graph)
+    with st.spinner("Calculating task view..."):
+        # Retrieve graph choices
+        graph_view = st.session_state.main_graph_view
+        graph_choice = st.session_state.main_graph_choice
+        graph_view_by_choice = VIEW_BY_GRAPH_CHOICE[graph_choice]
+        
+        # Switch graph_view then render accordingly
+        if graph_view == graph_view_by_choice[0]:
+            layout_options = graph.topo_sort_layered_layout(st.session_state.task_depend_graph)
+        elif graph_view == graph_view_by_choice[1]:
+            layout_options = "grid"
+        elif graph_view == graph_view_by_choice[-1]:
+            # TODO: Implement magic view here
+            st.warning("Magic View not implemented yet")
+            layout_options = "cose"
+
         # TODO: Might be a good place to do graphrag here
         st_link_analysis(elements, layout_options, node_styles, edge_styles)
     
     accordion_graph_chatbot(task_depend_graph)
+graph_choose_col, graph_view_col = st.columns(2)
 
-st.session_state.main_graph_view = st.selectbox("Choose a graph view", ["Employee Interaction", "Task Dependence"])
+with graph_choose_col:
+    st.session_state.main_graph_choice = st.selectbox("Choose a graph to view", ["Employee Interaction", "Task Dependence"])
 
-if st.session_state.main_graph_view == "Employee Interaction":
+with graph_view_col:
+    view_choices = VIEW_BY_GRAPH_CHOICE[st.session_state.main_graph_choice]
+    st.session_state.main_graph_view = st.selectbox("Choose how you want to view", view_choices)
+
+if st.session_state.main_graph_choice == "Employee Interaction":
     with st.spinner("Retrieving your employees..."):
         render_employee_interaction_graph()
-elif st.session_state.main_graph_view == "Task Dependence":
+elif st.session_state.main_graph_choice == "Task Dependence":
     with st.spinner("Retrieving your tasks..."):
         render_task_dependence_graph()
 
@@ -141,28 +187,18 @@ st.markdown("### Overview")
 # Create a three-column layout
 col1, col2, col3 = st.columns(3)
 
-import streamlit as st
-
-
-# Create a three-column layout
-col1, col2, col3 = st.columns(3)
-
 emp_info_dict = st.session_state.emp_info_dict
 task_info_dict = st.session_state.task_info_dict
-
 
 # First column: Summary tile + Information
 with col1:
     st.selectbox("employee_stat", ["Current Employees", "Active Employees"], label_visibility="collapsed")
     summary_tile("Current Employees", len(emp_info_dict), "Total number of employees in this project.", "#FF7F3E")
 
-
-
 # Second column: Summary tile + Information
 with col2:
     st.selectbox("task_stat", ["Remaining Tasks", "Active Tasks", "Total Story Points", "Remaining Story Points"], label_visibility="collapsed")
     summary_tile("Remaining Tasks", len(task_info_dict), "Remaining number of tasks.", "#4CAF50")
-
 
 # Third column: Summary tile + Information
 with col3:

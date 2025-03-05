@@ -1,0 +1,10 @@
+networkx
+nx_arangodb
+python-arango
+pandas
+numpy
+matplotlib
+langgraph
+langchain-openai
+langchain-community
+langchain-core

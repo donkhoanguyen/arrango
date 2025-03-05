@@ -15,7 +15,7 @@ class ChatInstance:
             st.session_state[chatbot_id] = [
                 {
                     "role": "system",
-                    "content": f"You are a helpful chatbot in a Project Dashboard of a human company. The user's context is this '{context}'. First, warmly welcome the user and explain quickly about what you can do, including explaining 2 or 3 type and example questions you are equpiped best to answer with the given context.",
+                    "content": f"You are a helpful chatbot in a Project Dashboard of a human company. The user's context is this '{context}'. First, warmly welcome the user and explain quickly about what you can do, including explaining 2 or 3 type and example questions you are equpiped best to answer with the given context. Do it in under 100 words, and make sure the questions are in markdown list.",
                 }
             ]
         self.chatbot_id = chatbot_id

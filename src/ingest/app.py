@@ -121,19 +121,25 @@ def render_employee_interaction_graph():
         graph_choice = st.session_state.main_graph_choice
         graph_view_by_choice = VIEW_BY_GRAPH_CHOICE[graph_choice]
         
+        if graph_view == graph_view_by_choice[-1]:
+            st.warning("Magic View not implemented yet")
+            graph_col, magic_col = st.columns([3, 1])
+            with graph_col:
+                layout_options = "cose"
+                st_link_analysis(elements, layout_options, node_styles, edge_styles)
+            with magic_col:
+                chatbot = ChatInstance("magic_view/emp_interact_graph", "This is about a modifying how you visualize a node-edges graph. Offer what you can do to visualize this graph")
+                chatbot.render()
+        
         # Switch graph_view then render accordingly
-        if graph_view == graph_view_by_choice[0]:
+        elif graph_view == graph_view_by_choice[0]:
             layout_options = graph.get_layout_for_seniority_layers(emp_interact_graph)
+            st_link_analysis(elements, layout_options, node_styles, edge_styles)
         elif graph_view == graph_view_by_choice[1]:
             layout_options = "grid"
-        elif graph_view == graph_view_by_choice[-1]:
-            # TODO: Implement magic view here
-            st.warning("Magic View not implemented yet")
-            layout_options = "cose"
-    
-        st_link_analysis(elements, layout_options, node_styles, edge_styles)
+            st_link_analysis(elements, layout_options, node_styles, edge_styles)
 
-    accordion_graph_chatbot(emp_interact_graph)
+    accordion_graph_chatbot(emp_interact_graph, "magic_ask/emp_interact_graph")
 
 def render_task_dependence_graph():
     
@@ -164,7 +170,7 @@ def render_task_dependence_graph():
         # TODO: Might be a good place to do graphrag here
         st_link_analysis(elements, layout_options, node_styles, edge_styles)
     
-    accordion_graph_chatbot(task_depend_graph)
+    accordion_graph_chatbot(task_depend_graph, "magic_ask/task_depend_graph")
 graph_choose_col, graph_view_col = st.columns(2)
 
 with graph_choose_col:

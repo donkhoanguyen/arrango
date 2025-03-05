@@ -44,7 +44,7 @@ def process_stream(stream):
     for chunk in stream:
         message = chunk[0]
         if isinstance(message, ToolMessage):
-            with st.expander(f"Using tool [{message.name}]"):
+            with st.expander(f"Used tool [{message.name}]"):
                 st.markdown("Tool Response:")
                 st.markdown(f"```\n{message.content}\n```")
             yield ""

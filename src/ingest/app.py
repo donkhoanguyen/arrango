@@ -10,7 +10,7 @@ import database as db
 import graph
 
 from component import *
-from st_link_analysis import st_link_analysis, NodeStyle, EdgeStyle
+from st_link_analysis import st_link_analysis
 
 VIEW_BY_GRAPH_CHOICE = {
     "Employee Interaction": ["Default (by hierarchy)", "Grid", "✨ Magic View"],
@@ -95,7 +95,7 @@ st.markdown("<h1 style='text-align: center;'>Project Overview Dashboard</h1>", u
 is_ready = True
 
 # if not os.environ["OPENAI_API_KEY"] .startswith("sk-"):
-#     st.warning("Please enter your OpenAI API key for interactive GraphRAG modification!", icon="⚠")
+#     st.warning("Please enter your OpenAI API key for GraphRAG Magic Ask!", icon="⚠")
 #     is_ready = False
 
 # if not uploaded_files:
@@ -131,8 +131,7 @@ def render_employee_interaction_graph():
             st.warning("Magic View not implemented yet")
             layout_options = "cose"
     
-    # TODO: Might be a good place to do graphrag here
-    st_link_analysis(elements, layout_options, node_styles, edge_styles)
+        st_link_analysis(elements, layout_options, node_styles, edge_styles)
 
     accordion_graph_chatbot(emp_interact_graph)
 

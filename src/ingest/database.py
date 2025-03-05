@@ -1,24 +1,15 @@
-import os
 import random
 import nx_arangodb as nxadb
-import networkx as nx
+import streamlit as st
 
-from st_link_analysis import st_link_analysis, NodeStyle, EdgeStyle
+from st_link_analysis import NodeStyle, EdgeStyle
 from arango import ArangoClient
-from streamlit_float import float_init, float_css_helper, float_parent
 
-float_init(theme=True, include_unstable_primary=False)
-
-os.environ["DATABASE_HOST"] = "https://b61c3b83bfe6.arangodb.cloud:8529"
-os.environ["DATABASE_USERNAME"] = "root"
-os.environ["DATABASE_PASSWORD"] = "RHr0KzkRUVlp61IisH8G"
-os.environ["DATABASE_NAME"] = "DAC_devops_log"
-
-client = ArangoClient(hosts=os.environ["DATABASE_HOST"])
+client = ArangoClient(hosts=st.secrets["DATABASE_HOST"])
 db = client.db(
-    os.environ["DATABASE_NAME"],
-    username=os.environ["DATABASE_USERNAME"],
-    password=os.environ["DATABASE_PASSWORD"]
+    st.secrets["DATABASE_NAME"],
+    username=st.secrets["DATABASE_USERNAME"],
+    password=st.secrets["DATABASE_PASSWORD"]
 )
 
 TASK_STATUS_LABEL_MAP = {

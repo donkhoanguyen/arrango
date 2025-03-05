@@ -51,6 +51,9 @@ if "main_graph_choice" not in st.session_state:
 if "main_graph_view" not in st.session_state:
     st.session_state.main_graph_view = VIEW_BY_GRAPH_CHOICE[st.session_state.main_graph_choice][0]
 
+if "openai_model" not in st.session_state:
+    st.session_state["openai_model"] = "gpt-4o"
+
 # Sidebar for Upload and API Key
 os.environ["OPENAI_API_KEY"] = st.sidebar.text_input("OpenAI API Key", type="password")
 

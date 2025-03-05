@@ -5,6 +5,9 @@ import networkx as nx
 
 from st_link_analysis import st_link_analysis, NodeStyle, EdgeStyle
 from arango import ArangoClient
+from streamlit_float import float_init, float_css_helper, float_parent
+
+float_init(theme=True, include_unstable_primary=False)
 
 os.environ["DATABASE_HOST"] = "https://b61c3b83bfe6.arangodb.cloud:8529"
 os.environ["DATABASE_USERNAME"] = "root"

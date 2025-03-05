@@ -1,10 +1,8 @@
 import streamlit as st
 from openai import OpenAI
+# from streamlit_float import float_css_helper, float_parent
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-
-if "openai_model" not in st.session_state:
-    st.session_state["openai_model"] = "gpt-4o"
 
 class ChatInstance:
     def __init__(self, chatbot_id: str, context: str):
@@ -27,32 +25,41 @@ class ChatInstance:
     def render(self):
         messages = self.get_messages()
 
-        # Display chat messages from history on app rerun
-        for message in messages:
-            if message["role"] == "system":
-                continue
-            print(message["role"])
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
-        
-        # If is new chatbot, then open with an welcome
-        if len(messages) == 1:
-            with st.chat_message("assistant"):
-                stream = self.get_response_stream()
-                response = st.write_stream(stream)
-            self.append_message({"role": "assistant", "content": response})
+        with st.container(height=600):
+            # Display chat messages from history on app rerun
+            for message in messages:
+                if message["role"] == "system":
+                    continue
+                with st.chat_message(message["role"]):
+                    st.markdown(message["content"])
+            
+            # If is new chatbot, then open with an welcome
+            if len(messages) == 1:
+                with st.chat_message("assistant"):
+                    stream = self.get_response_stream()
+                    response = st.write_stream(stream)
+                self.append_message({"role": "assistant", "content": response})
+            styl = f"""
+            <style>
+                .stTextInput {{
+                position: fixed;
+                bottom: 3rem;
+                }}
+            </style>
+            """
+            print(styl)
+            st.markdown(styl, unsafe_allow_html=True)
+            # Start accepting chat
+            if prompt := st.chat_input("What do you want to do today?"):
+                self.append_message({"role": "user", "content": prompt})
 
-        # Start accepting chat
-        if prompt := st.chat_input("What do you want to do today?"):
-            self.append_message({"role": "user", "content": prompt})
+                with st.chat_message("user"):
+                    st.markdown(prompt)
 
-            with st.chat_message("user"):
-                st.markdown(prompt)
-
-            with st.chat_message("assistant"):
-                stream = self.get_response_stream()
-                response = st.write_stream(stream)
-            self.append_message({"role": "assistant", "content": response})
+                with st.chat_message("assistant"):
+                    stream = self.get_response_stream()
+                    response = st.write_stream(stream)
+                self.append_message({"role": "assistant", "content": response})
 
     def get_response_stream(self):
         stream = client.chat.completions.create(
@@ -67,6 +74,4 @@ class ChatInstance:
 
     def chat(self, query):
         self.append_message({"role": "user", "content": query})
-    
-chat = ChatInstance("test", "This chat is about this employee. Finetune your questions in context of this employee")
-chat.render()
+

@@ -109,7 +109,6 @@ def layered_topo_sort_by_seniority(G):
     for node, data in G.nodes(data=True):
         layer = SENIORITY_LAYER_MAP.get(data['Seniority'], 3)  # Default to JuniorEmployee layer
         layers[layer].append(node)
-        print(data['Seniority'])
     
     # Sort nodes within each layer if necessary (for example, by name or any other attribute)
     # Here we just return the layers as is

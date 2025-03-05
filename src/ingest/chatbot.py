@@ -1,13 +1,56 @@
+import os
 import streamlit as st
-from openai import OpenAI
-# from streamlit_float import float_css_helper, float_parent
 
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+os.environ["LANGSMITH_TRACING"] = st.secrets["LANGSMITH_TRACING"]
+os.environ["LANGSMITH_ENDPOINT"] = st.secrets["LANGSMITH_ENDPOINT"]
+os.environ["LANGSMITH_API_KEY"] = st.secrets["LANGSMITH_API_KEY"]
+os.environ["LANGSMITH_PROJECT"] = st.secrets["LANGSMITH_PROJECT"]
+
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import ToolMessage
+from langchain_core.messages.ai import AIMessageChunk
+from typing import Literal
+
+from langchain_core.tools import tool
+
+model = ChatOpenAI(model="gpt-4o", temperature=0.7, api_key=st.secrets["OPENAI_API_KEY"])
+
+@tool
+def get_weather(city: Literal["nyc", "sf"]):
+    """Use this to get weather information."""
+    if city == "nyc":
+        return "It might be cloudy in nyc"
+    elif city == "sf":
+        return "It's always sunny in sf"
+    else:
+        raise AssertionError("Unknown city")
+
+
+tools = [get_weather]
+
+
+# Define the graph
+
+from langgraph.prebuilt import create_react_agent
+
+graph = create_react_agent(model, tools=tools)
 
 DEFAULT_CHAT_AVATAR_MAP = {
     "user": "❓",
     "assistant": "💁",
 }
+
+def process_stream(stream):
+    for chunk in stream:
+        message = chunk[0]
+        if isinstance(message, ToolMessage):
+            with st.expander(f"Using tool [{message.name}]"):
+                st.markdown("Tool Response:")
+                st.markdown(f"```\n{message.content}\n```")
+            yield ""
+        
+        if isinstance(message, AIMessageChunk):
+            yield message.content
 
 class ChatInstance:
     def __init__(self, chatbot_id: str, context: str):
@@ -47,23 +90,21 @@ class ChatInstance:
             if len(messages) == 1 or messages[-1]["role"] == "user":
                 with st.chat_message("assistant", avatar=DEFAULT_CHAT_AVATAR_MAP["assistant"]):
                     stream = self.get_response_stream()
-                    response = st.write_stream(stream)
+                    response = st.write_stream(process_stream(stream))
                 self.append_message({"role": "assistant", "content": response})
 
             # Start accepting chat
         st.chat_input("What do you want to do today?", key=f"{self.chatbot_id}/prev_user_msg", on_submit=self._callback_append_user_msg)
 
     def get_response_stream(self):
-        stream = client.chat.completions.create(
-            model=st.session_state["openai_model"],
-            messages=[
-                {"role": m["role"], "content": m["content"]}
-                for m in self.get_messages()
-            ],
-            stream=True,
+        stream = graph.stream(
+            {
+                "messages": self.get_messages(),
+            },
+            stream_mode="messages"
         )
+        # print_stream(stream)
         return stream
 
     def chat(self, query):
         self.append_message({"role": "user", "content": query})
-

@@ -1,5 +1,7 @@
-import json
 import streamlit as st
+# --- Page Layout ---
+st.set_page_config(layout="wide")  # Set to full-screen mode
+
 import networkx as nx
 import fitz  # PyMuPDF
 import tempfile
@@ -15,8 +17,6 @@ VIEW_BY_GRAPH_CHOICE = {
     "Task Dependence": ["Default (by layers)", "Grid", "✨ Magic View"]
 }
 
-# --- Page Layout ---
-st.set_page_config(layout="wide")  # Set to full-screen mode
 
 
 # --- Initialize session state ---

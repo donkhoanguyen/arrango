@@ -4,6 +4,11 @@ from openai import OpenAI
 
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
+DEFAULT_CHAT_AVATAR_MAP = {
+    "user": "❓",
+    "assistant": "💁",
+}
+
 class ChatInstance:
     def __init__(self, chatbot_id: str, context: str):
         if chatbot_id not in st.session_state:
@@ -22,44 +27,31 @@ class ChatInstance:
     def append_message(self, message):
         st.session_state[self.chatbot_id].append(message)
 
+    def _callback_append_user_msg(self):
+        user_msg = st.session_state[f"{self.chatbot_id}/prev_user_msg"]
+        self.append_message({"role": "user", "content": user_msg})
+
     def render(self):
         messages = self.get_messages()
 
-        with st.container(height=600):
+        with st.container(height=500):
             # Display chat messages from history on app rerun
             for message in messages:
+                # Skip system prompt
                 if message["role"] == "system":
                     continue
-                with st.chat_message(message["role"]):
+                with st.chat_message(message["role"], avatar=DEFAULT_CHAT_AVATAR_MAP[message["role"]]):
                     st.markdown(message["content"])
             
             # If is new chatbot, then open with an welcome
-            if len(messages) == 1:
-                with st.chat_message("assistant"):
+            if len(messages) == 1 or messages[-1]["role"] == "user":
+                with st.chat_message("assistant", avatar=DEFAULT_CHAT_AVATAR_MAP["assistant"]):
                     stream = self.get_response_stream()
                     response = st.write_stream(stream)
                 self.append_message({"role": "assistant", "content": response})
-            styl = f"""
-            <style>
-                .stTextInput {{
-                position: fixed;
-                bottom: 3rem;
-                }}
-            </style>
-            """
-            print(styl)
-            st.markdown(styl, unsafe_allow_html=True)
+
             # Start accepting chat
-            if prompt := st.chat_input("What do you want to do today?"):
-                self.append_message({"role": "user", "content": prompt})
-
-                with st.chat_message("user"):
-                    st.markdown(prompt)
-
-                with st.chat_message("assistant"):
-                    stream = self.get_response_stream()
-                    response = st.write_stream(stream)
-                self.append_message({"role": "assistant", "content": response})
+        st.chat_input("What do you want to do today?", key=f"{self.chatbot_id}/prev_user_msg", on_submit=self._callback_append_user_msg)
 
     def get_response_stream(self):
         stream = client.chat.completions.create(

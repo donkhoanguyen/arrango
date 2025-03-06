@@ -10,50 +10,73 @@ SENIORITY_LAYER_MAP = {
     "Junior": 4
 }
 
+def extract_dag_subgraphs(G):
+    """Extracts all DAG subgraphs from a directed graph."""
+    dag_subgraphs = []
+    single_nodes = []
+    
+    for component in nx.weakly_connected_components(G):
+        subgraph = G.subgraph(component).copy()
+        if len(subgraph) == 1:
+            single_nodes.append(next(iter(subgraph.nodes())))
+        elif nx.is_directed_acyclic_graph(subgraph):
+            dag_subgraphs.append(subgraph)
+
+    return dag_subgraphs, single_nodes
+
 def topo_sort_layered_layout(G, fit=True, padding=30, spacing_factor=1, animate=False, animation_duration=500):
     """
-    Converts a NetworkX directed graph's topological sort into a layered layout for Cytoscape.js.
+    Converts a NetworkX directed graph into a layered layout for Cytoscape.js, 
+    extracting and visualizing separate DAGs distinctly.
     
     :param G: A directed graph (DiGraph) from NetworkX
-    :param fit: Whether to fit the layout to the viewport (default True)
-    :param padding: Padding on fit (default 30)
-    :param spacing_factor: Factor for spacing between nodes (default 1)
-    :param animate: Whether to animate the node positioning (default False)
-    :param animation_duration: Duration of animation in ms (default 500)
     :return: A dictionary with Cytoscape.js layout options
     """
-    # layers = layered_topo_sort(G)# Get the layers from the peeling method
-    layers = nx.topological_generations(G) 
-    print(layers)
-    # Create positions for Cytoscape.js with nodes positioned row by row
+    dag_subgraphs, single_nodes = extract_dag_subgraphs(G.copy())
     positions = {}
-    layer_height = -100  # Height for each layer (adjust as needed)
     
-    for level, nodes in enumerate(layers):
-        layer_width = len(nodes)  # Number of nodes in the current layer
-        vertical_position = level * layer_height
-        horizontal_spacing = 100  # Horizontal spacing between nodes in the same layer
+    layer_height = -100  # Vertical spacing between layers
+    dag_x_offset = 0      # Horizontal offset for separating DAGs
+    dag_spacing = 100     # Spacing between DAGs
+    single_node_spacing = -100  # Spacing for single-node grid
+
+    # Process each DAG separately
+    for dag in dag_subgraphs:
+        layers = list(nx.topological_generations(dag))
         
-        for i, node in enumerate(nodes):
-            positions[node] = {
-                'x': (i - (layer_width // 2)) * horizontal_spacing,  # Position nodes evenly within the layer
-                'y': vertical_position  # Position layers vertically
-            }
-    
+        max_layer_width = max(len(layer) for layer in layers)  # Widest layer
+        horizontal_spacing = 100  # Spacing between nodes in the same layer
+        
+        for level, nodes in enumerate(layers):
+            vertical_position = level * layer_height
+            layer_width = len(nodes)
+            
+            for i, node in enumerate(nodes):
+                positions[node] = {
+                    'x': dag_x_offset + (i - layer_width // 2) * horizontal_spacing,
+                    'y': vertical_position
+                }
+        
+        dag_x_offset += max_layer_width * horizontal_spacing + dag_spacing  # Shift for next DAG
+
+    # Position single nodes in a grid
+    grid_width = int(len(single_nodes) ** 0.5) or 1  # Square-like grid
+    for i, node in enumerate(single_nodes):
+        row, col = divmod(i, grid_width)
+        positions[node] = {
+            'x': dag_x_offset + col * single_node_spacing,
+            'y': row * single_node_spacing
+        }
+
     # Cytoscape.js layout options
     layout_options = {
         'name': 'preset',
-        'positions': positions,  # Map of node ids to positions
-        'zoom': None,  # Default zoom level
-        'pan': None,  # Default pan level
-        'fit': fit,  # Whether to fit to viewport
-        'padding': padding,  # Padding on fit
-        'spacingFactor': spacing_factor,  # Expand or compress the layout area
-        'animate': animate,  # Whether to animate node positions
-        'animationDuration': animation_duration,  # Duration of animation
-        'animationEasing': None,  # Default easing for animation
-        'ready': None,  # Callback when layout is ready
-        'stop': None,  # Callback when layout stops
+        'positions': positions,
+        'fit': fit,
+        'padding': padding,
+        'spacingFactor': spacing_factor,
+        'animate': animate,
+        'animationDuration': animation_duration,
     }
 
     return layout_options

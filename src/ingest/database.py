@@ -1,4 +1,3 @@
-import random
 import nx_arangodb as nxadb
 import streamlit as st
 
@@ -71,8 +70,8 @@ def get_all_tasks():
             "StoryPoints": task.get("StoryPoints"),
             "StartTime": task.get("StartTime"),
             "EstimatedFinishTime": task.get("EstimatedFinishTime"),
-            # "Status": task.get("Status"),
-            "Status": random.choice(list(TASK_STATUS_LABEL_MAP.keys())),
+            "Status": task.get("Status"),
+            # "Status": random.choice(list(TASK_STATUS_LABEL_MAP.keys())),
             "ActualFinishTime": task.get("ActualFinishTime")
         }
         task_dict[f"task/{task['_key']}"] = task_info

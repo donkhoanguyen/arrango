@@ -10,10 +10,34 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import ToolMessage
 from langchain_core.messages.ai import AIMessageChunk
 from typing import Literal
-
+from langgraph.prebuilt import create_react_agent
 from langchain_core.tools import tool
 
 model = ChatOpenAI(model="gpt-4o", temperature=0.7, api_key=st.secrets["OPENAI_API_KEY"])
+
+
+# Tool 1: Generate image metadata with @tool decorator
+@tool
+def generate_image_metadata(image_url: str):
+    """Mock function to return image metadata."""
+    metadata = {
+        "url": image_url,
+        "width": 1920,
+        "height": 1080,
+        "format": "JPEG",
+        "size_kb": 350  # Image size in KB
+    }
+    return metadata  # Returns a dictionary
+
+# Tool 2: Analyze image metadata with @tool decorator
+@tool
+def analyze_image_metadata(metadata: dict):
+    """Check if image meets certain criteria."""
+    if metadata["width"] >= 1280 and metadata["height"] >= 720 and metadata["size_kb"] <= 500:
+        return {"status": "Valid", "message": "Image meets resolution and size requirements."}
+    else:
+        return {"status": "Invalid", "message": "Image does not meet the required specs."}
+
 
 @tool
 def get_weather(city: Literal["nyc", "sf"]):
@@ -26,14 +50,8 @@ def get_weather(city: Literal["nyc", "sf"]):
         raise AssertionError("Unknown city")
 
 
-tools = [get_weather]
-
-
-# Define the graph
-
-from langgraph.prebuilt import create_react_agent
-
-graph = create_react_agent(model, tools=tools)
+tools = [get_weather, generate_image_metadata, analyze_image_metadata]
+agent = create_react_agent(model, tools=tools)
 
 DEFAULT_CHAT_AVATAR_MAP = {
     "user": "❓",
@@ -97,7 +115,7 @@ class ChatInstance:
         st.chat_input("What do you want to do today?", key=f"{self.chatbot_id}/prev_user_msg", on_submit=self._callback_append_user_msg)
 
     def get_response_stream(self):
-        stream = graph.stream(
+        stream = agent.stream(
             {
                 "messages": self.get_messages(),
             },

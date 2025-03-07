@@ -1,4 +1,3 @@
-import json
 import streamlit as st
 # --- Page Layout ---
 st.set_page_config(layout="wide")  # Set to full-screen mode
@@ -9,6 +8,7 @@ import tempfile
 import os
 import database as db
 import graph as graph_utils
+import streamlit_nested_layout
 
 from component import *
 from st_link_analysis import st_link_analysis
@@ -89,8 +89,6 @@ if "openai_model" not in st.session_state:
 os.environ["OPENAI_API_KEY"] = st.sidebar.text_input("OpenAI API Key", type="password")
 
 st.sidebar.title("Upload Documents")
-uploaded_files = st.sidebar.file_uploader("Upload project-related documents (PDF only)",
-                                          accept_multiple_files=True, type=["pdf"])
 uploaded_files = st.sidebar.file_uploader("Upload project-related documents (PDF only)",
                                           accept_multiple_files=True, type=["pdf"])
 

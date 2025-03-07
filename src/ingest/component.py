@@ -1,4 +1,6 @@
 import streamlit as st
+import streamlit_nested_layout
+
 from chatbot import ChatInstance
 
 def summary_tile(title, number, description, color):

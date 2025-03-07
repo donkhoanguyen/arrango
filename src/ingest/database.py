@@ -1,21 +1,14 @@
-import os
-import random
 import nx_arangodb as nxadb
-import networkx as nx
+import streamlit as st
 
-from st_link_analysis import st_link_analysis, NodeStyle, EdgeStyle
+from st_link_analysis import NodeStyle, EdgeStyle
 from arango import ArangoClient
 
-os.environ["DATABASE_HOST"] = "https://b61c3b83bfe6.arangodb.cloud:8529"
-os.environ["DATABASE_USERNAME"] = "root"
-os.environ["DATABASE_PASSWORD"] = "RHr0KzkRUVlp61IisH8G"
-os.environ["DATABASE_NAME"] = "DAC_devops_log"
-
-client = ArangoClient(hosts=os.environ["DATABASE_HOST"])
+client = ArangoClient(hosts=st.secrets["DATABASE_HOST"])
 db = client.db(
-    os.environ["DATABASE_NAME"],
-    username=os.environ["DATABASE_USERNAME"],
-    password=os.environ["DATABASE_PASSWORD"]
+    st.secrets["DATABASE_NAME"],
+    username=st.secrets["DATABASE_USERNAME"],
+    password=st.secrets["DATABASE_PASSWORD"]
 )
 
 TASK_STATUS_LABEL_MAP = {
@@ -26,12 +19,16 @@ TASK_STATUS_LABEL_MAP = {
 }
 
 # Function to get all employee information as a dictionary with EmpID as the key
-def get_all_employees():
+def get_all_employees_by_team(team_name):
     # Access the employee vertex collection
-    employee_collection = db.collection('employee')  # Ensure this is the correct collection name
-    
+    # employee_collection = db.collection('employee')  # Ensure this is the correct collection name
+    employee_query = f"""
+    FOR e IN employee
+        FILTER e.Team == '{team_name}'
+        RETURN e
+    """
     # Fetch all employees from the collection
-    employees = employee_collection.all()  # Fetches all documents in the collection
+    employees = db.aql.execute(employee_query)  # Fetches all documents in the collection
     
     # Create a dictionary to store employee info with EmpID as the key
     employee_dict = {}
@@ -77,8 +74,8 @@ def get_all_tasks():
             "StoryPoints": task.get("StoryPoints"),
             "StartTime": task.get("StartTime"),
             "EstimatedFinishTime": task.get("EstimatedFinishTime"),
-            # "Status": task.get("Status"),
-            "Status": random.choice(list(TASK_STATUS_LABEL_MAP.keys())),
+            "Status": task.get("Status"),
+            # "Status": random.choice(list(TASK_STATUS_LABEL_MAP.keys())),
             "ActualFinishTime": task.get("ActualFinishTime")
         }
         task_dict[f"task/{task['_key']}"] = task_info
@@ -91,14 +88,15 @@ def get_employee_interact_graph():
 def get_task_dependence_graph():
     return nxadb.DiGraph(name="tasks_sprint1")
 
+def get_bi_team_task_assignment():
+    return nxadb.MultiDiGraph(name="bi_team_task_assignment")
 
 
-def retrieve_employee_interaction_graph(emp_interact_graph, emp_info_dict):
+def retrieve_employee_interaction_graph(emp_interact_graph):
     nodes = []
     edges = []
     
-    for employee_node in emp_interact_graph.nodes:
-        employee_info = emp_info_dict[employee_node]
+    for employee_node, employee_info in emp_interact_graph.nodes(data=True):
         seniority = employee_info["Seniority"] 
 
         nodes.append({
@@ -106,7 +104,7 @@ def retrieve_employee_interaction_graph(emp_interact_graph, emp_info_dict):
                 "id": employee_node, 
                 "label": seniority,
                 "name": f"{employee_info['FirstName']} {employee_info['LastName']}",
-                **emp_info_dict[employee_node]
+                **employee_info
             }
         })
     # Style node & edge groups
@@ -141,19 +139,17 @@ def retrieve_employee_interaction_graph(emp_interact_graph, emp_info_dict):
 
     return elements, node_styles, edge_styles
 
-def retrieve_task_dependence_graph(task_interact_graph, task_info_dict):
+def retrieve_task_dependence_graph(task_interact_graph):
     nodes = []
     edges = []
     
-    for task_node in task_interact_graph.nodes:
-        task_info = task_info_dict[task_node]
-
+    for task_node, task_info in task_interact_graph.nodes(data=True):
         nodes.append({
             "data": {
                 "id": task_node, 
                 "label": TASK_STATUS_LABEL_MAP.get(task_info["Status"], "Planned"),
                 "name": task_info["TaskID"],
-                **task_info_dict[task_node]
+                **task_info
             }
         })
     # Style node & edge groups
@@ -176,6 +172,89 @@ def retrieve_task_dependence_graph(task_interact_graph, task_info_dict):
     edge_styles = [
         EdgeStyle("Depends On", caption='label', directed=True),
     ]
+    elements = {
+        "nodes": nodes,
+        "edges": edges,
+    }
+
+    return elements, node_styles, edge_styles
+
+def retrieve_bi_team_task_assignment_graph(task_graph):
+    nodes = []
+    edges = []
+
+    # Mapping task statuses to labels and colors
+    TASK_STATUS_LABEL_MAP = {
+        "Planned": "PlannedTask",
+        "In Progress": "InProgressTask",
+        "Completed": "CompletedTask",
+        "Blocked": "BlockedTask",
+    }
+    TASK_COLOR_MAP = {
+        "PlannedTask": "#d3d3d3",
+        "InProgressTask": "#f39c12",
+        "CompletedTask": "#2ecc71",
+        "BlockedTask": "#e74c3c",
+    }
+    
+    # Employee seniority color mapping
+    EMPLOYEE_COLOR_MAP = {
+        "Lead": "#FF7F3E",
+        "Senior": "#4CAF50",
+        "Mid-Level": "#2196F3",
+        "Junior": "#FFC107",
+    }
+
+    for node, data in task_graph.nodes(data=True):
+        if node[:4] == "task":
+            if data["Status"] == "Planned":
+                continue
+            task_label = TASK_STATUS_LABEL_MAP.get(data["Status"], "PlannedTask")
+            nodes.append({
+                "data": {
+                    "id": node, 
+                    "label": task_label,
+                    "name": data["TaskID"],
+                    **data
+                }
+            })
+        else:
+            # Only render for BI team
+            if data["Team"] != "Business Intelligence":
+                continue
+            seniority = data["Seniority"]
+            nodes.append({
+                "data": {
+                    "id": node,
+                    "label": seniority,
+                    "name": f"{data['FirstName']} {data['LastName']}",
+                    **data
+                }
+            })
+
+    # Style mappings for nodes
+    node_styles = [
+        NodeStyle(label, TASK_COLOR_MAP[label], "name", "task") for label in TASK_STATUS_LABEL_MAP.values()
+    ] + [
+        NodeStyle(seniority, EMPLOYEE_COLOR_MAP[seniority], "name", "person") for seniority in EMPLOYEE_COLOR_MAP
+    ]
+    # Add edges
+    for emp_from, task_to, data in task_graph.edges(data=True):
+        edges.append({
+            "data": {
+                "id": f"{emp_from}->{task_to}",
+                "label": data["relationship"],
+                "source": emp_from,
+                "target": task_to,
+            }
+        })
+
+    # Style mappings for edges
+    edge_styles = [
+        EdgeStyle("assigned", color="#E57373", caption='label', directed=True),
+        EdgeStyle("advised", color="#64B5F6", caption='label', directed=True),
+    ]
+
     elements = {
         "nodes": nodes,
         "edges": edges,

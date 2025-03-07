@@ -1,4 +1,5 @@
 import streamlit as st
+from chatbot import ChatInstance
 
 def summary_tile(title, number, description, color):
     st.markdown(
@@ -86,15 +87,25 @@ def task_tile(task):
     
     st.markdown("---")
 
-@st.dialog("Magic Ask Employee")
 def magic_ask_employee(employee):
-    st.chat_input(f"What do you want to ask about {employee['FirstName']}?")
-    # TODO: Implement CPM and HITS Promotion Analysis here
+    title = f"Magic Ask about {employee['FirstName']} {employee['LastName']}"
+   
+    @st.dialog(title, width="large")
+    def ask():
+        context = f"You are answering question about this employee, here is their details {employee}"
+        chatbot = ChatInstance(f"magic_ask/{employee['EmpID']}", context)
+        chatbot.render()
+    ask()
 
-@st.dialog("Magic Ask Task")
 def magic_ask_task(task):
-    st.chat_input(f"What do you want to ask about Task {task['TaskID']}?")
-    # TODO: Implement CPM and HITS Promotion Analysis here
+    title = f"Magic Ask about {task['TaskID']}"
+   
+    @st.dialog(title, width="large")
+    def ask():
+        context = f"You are answering question about a JIRA task in this project, here is the task's details {task}"
+        chatbot = ChatInstance(f"magic_ask/{task['TaskID']}", context)
+        chatbot.render()
+    ask()
 
 @st.dialog("Employee Information")
 def employee_modal(employee):
@@ -193,6 +204,7 @@ def task_modal(task):
     st.markdown("### Notes")
     st.markdown("Add any relevant details or comments about this task.")
 
-def accordion_graph_chatbot(G):
+def accordion_graph_chatbot(G, chatbot_id):
     with st.expander("✨ Ask about this graph!"):
-        st.chat_input("Hello")
+        chatbot = ChatInstance(chatbot_id, "This is question about a graph")
+        chatbot.render()

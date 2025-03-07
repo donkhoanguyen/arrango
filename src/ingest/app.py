@@ -7,54 +7,78 @@ import fitz  # PyMuPDF
 import tempfile
 import os
 import database as db
-import graph
+import graph as graph_utils
 
 from component import *
 from st_link_analysis import st_link_analysis
 
+PROJECT_TO_TEAM_MAP = {
+    "StreamSync Pipeline": "Business Intelligence",
+    "DataForge ETL": "",
+    "AetherFlow Orchestrator": "",
+    "NeoGraph Linker": "",
+    "Company Overview": "*"
+}
+
 VIEW_BY_GRAPH_CHOICE = {
     "Employee Interaction": ["Default (by hierarchy)", "Grid", "✨ Magic View"],
     "Task Dependence": ["Default (by layers)", "Grid", "✨ Magic View"],
-    "Task Assignment": ["Default"],
+    "Task Assignment": ["Default", "✨ Magic View"],
 }
 
+PROJECT_LIST = ["StreamSync Pipeline", "DataForge ETL", "AetherFlow Orchestrator", "NeoGraph Linker", "Company Overview"]
 
+GRAPH_LIST = ["Employee Interaction", "Task Dependence", "Task Assignment"]
 
 # --- Initialize session state ---
-if "graph" not in st.session_state:
-    st.session_state.graph = nx.Graph()
+if "project_choice" not in st.session_state:
+    st.session_state.project_choice = PROJECT_LIST[0]
 
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
+project_choice = st.session_state.project_choice
+
+if "all_project_data" not in st.session_state:
+    st.session_state.all_project_data = {}
+
+if st.session_state.project_choice not in st.session_state.all_project_data:
+    with st.spinner(f"Retrieving {project_choice}'s Task Assignment"):
+        task_assignment = db.get_bi_team_task_assignment()
+    with st.spinner(f"Retrieving {project_choice}'s Employee Interaction"):
+        employee_interaction = db.get_employee_interact_graph()
+    with st.spinner(f"Retriving {project_choice}'s Task Depenence"):
+        task_dependence = db.get_task_dependence_graph()
+
+
+    st.session_state.all_project_data[project_choice] = {
+        "Task Assignment": {
+            "graph": task_assignment,
+            "render": db.retrieve_bi_team_task_assignment_graph
+        },
+        "Employee Interaction": {
+            "graph": employee_interaction,
+            "render": db.retrieve_employee_interaction_graph
+        },
+        "Task Dependence": {
+            "graph": task_dependence,
+            "render": db.retrieve_task_dependence_graph,
+        },
+        "collection/Tasks": db.get_all_tasks(),
+        "collection/Employees": db.get_all_employees_by_team(PROJECT_TO_TEAM_MAP[project_choice])
+    }
+
+cur_project_data = st.session_state.all_project_data[project_choice]
 
 if "documents_text" not in st.session_state:
     st.session_state.documents_text = []
 
-if "emp_info_dict" not in st.session_state:
-    with st.spinner("Retrieving employee information..."):
-        st.session_state.emp_info_dict = db.get_all_employees()
-
-if "task_info_dict" not in st.session_state:
-    with st.spinner("Retrieving tasks information..."):
-        st.session_state.task_info_dict = db.get_all_tasks()
-
-if "emp_interact_graph" not in st.session_state:
-    with st.spinner("Retrieving employee interaction graph..."):
-        st.session_state.emp_interact_graph = db.get_employee_interact_graph()
-
-if "task_depend_graph" not in st.session_state:
-    with st.spinner("Retrieving task dependence graph..."):
-        st.session_state.task_depend_graph = db.get_task_dependence_graph()
-
-if "bi_team_task_assignment" not in st.session_state:
-    with st.spinner("Retrieving task dependence graph..."):
-        st.session_state.bi_team_task_assignment = db.get_bi_team_task_assignment()
-
 if "main_graph_choice" not in st.session_state:
     st.session_state.main_graph_choice = "Task Dependence"
 
+main_graph_choice = st.session_state.main_graph_choice
+
 if "main_graph_view" not in st.session_state:
     st.session_state.main_graph_view = VIEW_BY_GRAPH_CHOICE[st.session_state.main_graph_choice][0]
+
+main_graph_view = st.session_state.main_graph_view
 
 if "openai_model" not in st.session_state:
     st.session_state["openai_model"] = "gpt-4o"
@@ -83,19 +107,12 @@ def extract_text_from_pdfs(files):
 
 # Process uploaded PDFs when "Generate Graph" is clicked
 if st.sidebar.button("Generate Graph"):
-    if uploaded_files:
-        st.session_state.documents_text = extract_text_from_pdfs(uploaded_files)
-        st.session_state.graph = nx.erdos_renyi_graph(10, 0.3)  # Placeholder for processing logic
-        st.sidebar.success("Graph generated successfully!")
-    else:
-        st.sidebar.warning("Please upload at least one PDF file.")
+    print("Generated!")
 
+st.markdown(f"<h1 style='text-align: center;'>{project_choice}</h1>", unsafe_allow_html=True)
+st.markdown(f"<h2 style='text-align: center;'>Project Overview Dashboard</h1>", unsafe_allow_html=True)
 
-# Methods for Chatbot UI
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-st.markdown("<h1 style='text-align: center;'>Project Overview Dashboard</h1>", unsafe_allow_html=True)
+project_choice = st.selectbox("Current project:", PROJECT_LIST)
 
 is_ready = True
 
@@ -110,126 +127,87 @@ is_ready = True
 if not is_ready:
     st.stop()
 
-def render_employee_interaction_graph():
-    emp_interact_graph = st.session_state.emp_interact_graph
-    elements, node_styles, edge_styles = db.retrieve_employee_interaction_graph(
-        emp_interact_graph,
-        st.session_state.emp_info_dict 
-    )
+def render_graph(project_choice, graph_choice, graph_view):
+    # Prepare graph and its render function
+    graph_data = cur_project_data[graph_choice]
+    graph = graph_data["graph"]
+    render_function = graph_data["render"]
 
-    # Render the component
-    st.markdown("### Employee Interaction Network")
 
-    with st.spinner("Calculating employee view..."):
-        # Retrieve graph choices
-        graph_view = st.session_state.main_graph_view
-        graph_choice = st.session_state.main_graph_choice
-        graph_view_by_choice = VIEW_BY_GRAPH_CHOICE[graph_choice]
-        
-        if graph_view == graph_view_by_choice[-1]:
+    # Start rendering
+    st.markdown(f"### {graph_choice} Network")
+    with st.spinner(f"Rendering {graph_choice} graph..."):
+        # Prepare the elements and styles to render
+        elements, node_styles, edge_styles = render_function(graph)
+
+        # If is Magic View, then show default cose layouts and chatbot on the side
+        if graph_view == GRAPH_LIST[-1]:
             st.warning("Magic View not implemented yet")
             graph_col, magic_col = st.columns([3, 1])
             with graph_col:
                 layout_options = "cose"
                 st_link_analysis(elements, layout_options, node_styles, edge_styles)
             with magic_col:
-                chatbot = ChatInstance("magic_view/emp_interact_graph", "This is about a modifying how you visualize a node-edges graph. Offer what you can do to visualize this graph")
+                chatbot = ChatInstance(f"{project_choice}/magic_view/{graph_choice}", "This is about a modifying how you visualize a node-edges graph. Offer what you can do to visualize this graph")
                 chatbot.render()
-        
-        # Switch graph_view then render accordingly
-        elif graph_view == graph_view_by_choice[0]:
-            layout_options = graph.get_layout_for_seniority_layers(emp_interact_graph)
-            st_link_analysis(elements, layout_options, node_styles, edge_styles)
-        elif graph_view == graph_view_by_choice[1]:
-            layout_options = "grid"
-            st_link_analysis(elements, layout_options, node_styles, edge_styles)
+            return
 
-    accordion_graph_chatbot(emp_interact_graph, "magic_ask/emp_interact_graph")
+        # Determine what layout will the graph render based on different graph view choice and graph data
+        layout_options = "cose"
+        # Employee Interaction
+        if graph_choice == GRAPH_LIST[0]:
+            graph_view_by_choice = VIEW_BY_GRAPH_CHOICE[graph_choice]
+            if graph_view == graph_view_by_choice[0]:
+                layout_options = graph_utils.get_layout_for_seniority_layers(graph)
+            elif graph_view == graph_view_by_choice[1]:
+                layout_options = "grid"
 
-def render_task_dependence_graph():
-    
-    task_depend_graph = st.session_state.task_depend_graph
-    elements, node_styles, edge_styles = db.retrieve_task_dependence_graph(
-        task_depend_graph,
-        st.session_state.task_info_dict
-    )
+        # Task Dependence
+        elif graph_choice == GRAPH_LIST[1]:
+            if graph_view == graph_view_by_choice[0]:
+                layout_options = graph_utils.topo_sort_layered_layout(st.session_state.task_depend_graph)
+            elif graph_view == graph_view_by_choice[1]:
+                layout_options = "grid"
         
-    # Render the component
-    st.markdown("### Task Dependence Network")
-    with st.spinner("Calculating task view..."):
-        # Retrieve graph choices
-        graph_view = st.session_state.main_graph_view
-        graph_choice = st.session_state.main_graph_choice
-        graph_view_by_choice = VIEW_BY_GRAPH_CHOICE[graph_choice]
-        
-        # Switch graph_view then render accordingly
-        if graph_view == graph_view_by_choice[0]:
-            layout_options = graph.topo_sort_layered_layout(st.session_state.task_depend_graph)
-        elif graph_view == graph_view_by_choice[1]:
-            layout_options = "grid"
-        elif graph_view == graph_view_by_choice[-1]:
-            # TODO: Implement magic view here
-            st.warning("Magic View not implemented yet")
+        # Task Assignment
+        elif graph_choice == GRAPH_LIST[2]:
             layout_options = "cose"
-
-        # TODO: Might be a good place to do graphrag here
-        st_link_analysis(elements, layout_options, node_styles, edge_styles)
-    
-    accordion_graph_chatbot(task_depend_graph, "magic_ask/task_depend_graph")
-
-def render_bi_team_task_assignment():
-    bi_team_task_assignment= st.session_state.bi_team_task_assignment
-    elements, node_styles, edge_styles = db.retrieve_bi_team_task_assignment_graph(
-        bi_team_task_assignment,
-    )
+            pass
         
-    # Render the component
-    st.markdown("### Task Assignment Network")
-       
-    st_link_analysis(elements, "cose", node_styles, edge_styles)
+        # Finally, render it out to frontend
+        st_link_analysis(elements, layout_options, node_styles, edge_styles)
+
+        accordion_graph_chatbot(graph, f"{project_choice}/magic_ask/{graph_choice}")
 
 
 graph_choose_col, graph_view_col = st.columns(2)
 
 with graph_choose_col:
     main_graph_choice = st.selectbox("Choose a graph to view", ["Employee Interaction", "Task Dependence", "Task Assignment"])
+    st.session_state.main_graph_choice = main_graph_choice
 
 with graph_view_col:
-    view_choices = VIEW_BY_GRAPH_CHOICE[st.session_state.main_graph_choice]
-    st.session_state.main_graph_view = st.selectbox("Choose how you want to view", view_choices)
+    view_choices = VIEW_BY_GRAPH_CHOICE[main_graph_choice]
+    main_graph_view = st.selectbox("Choose how you want to view", view_choices)
+    st.session_state.main_graph_view = main_graph_view
 
-st.session_state.main_graph_choice = main_graph_choice 
-
-if main_graph_choice == "Employee Interaction":
-    with st.spinner("Retrieving employees..."):
-        render_employee_interaction_graph()
-elif main_graph_choice == "Task Dependence":
-    with st.spinner("Retrieving tasks..."):
-        render_task_dependence_graph()
-elif main_graph_choice == "Task Assignment":
-    with st.spinner("Retrieving task assignments..."):
-        render_bi_team_task_assignment()
-
+render_graph(project_choice, main_graph_choice, main_graph_view)
 
 # Project Overview Section
 st.markdown("### Overview")
 
-
 # Create a three-column layout
 col1, col2, col3 = st.columns(3)
-
-emp_info_dict = st.session_state.emp_info_dict
-task_info_dict = st.session_state.task_info_dict
 
 # First column: Summary tile + Information
 with col1:
     st.selectbox("employee_stat", ["Current Employees", "Active Employees"], label_visibility="collapsed")
-    summary_tile("Current Employees", len(emp_info_dict), "Total number of employees in this project.", "#FF7F3E")
+    summary_tile("Current Employees", len(cur_project_data["collection/Employees"]), "Total number of employees in this project.", "#FF7F3E")
 
 # Second column: Summary tile + Information
 with col2:
     st.selectbox("task_stat", ["Remaining Tasks", "Active Tasks", "Total Story Points", "Remaining Story Points"], label_visibility="collapsed")
-    summary_tile("Remaining Tasks", len(task_info_dict), "Remaining number of tasks.", "#4CAF50")
+    summary_tile("Remaining Tasks", len(cur_project_data["collection/Tasks"]), "Remaining number of tasks.", "#4CAF50")
 
 # Third column: Summary tile + Information
 with col3:
@@ -239,7 +217,8 @@ with col3:
 st.markdown("---")
 
 emp_col, task_col = st.columns(2)
-
+emp_info_dict = cur_project_data["collection/Employees"]
+task_info_dict = cur_project_data["collection/Tasks"]
 with emp_col:
 
     st.markdown(f"### Active Employees ({len(emp_info_dict)})")
@@ -248,7 +227,7 @@ with emp_col:
     container = st.container(height=800)
     with container:
         # Create a div with a scrollable class
-        for empID in emp_info_dict:
+        for empID in cur_project_data["collection/Employees"]:
             employee_tile(emp_info_dict[empID])
 
 with task_col:
@@ -258,5 +237,5 @@ with task_col:
     container = st.container(height=800)
     with container:
         # Create a div with a scrollable class
-        for taskID in task_info_dict:
+        for taskID in cur_project_data["collection/Tasks"]:
             task_tile(task_info_dict[taskID])

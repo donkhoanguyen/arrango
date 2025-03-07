@@ -1,4 +1,6 @@
 .env
 venv/
-node_modules/
+secrets.toml
+
 **/__pycache__
+node_modules/

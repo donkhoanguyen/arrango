@@ -14,9 +14,25 @@ from st_link_analysis import st_link_analysis
 
 PROJECT_TO_TEAM_MAP = {
     "StreamSync Pipeline": "Business Intelligence",
-    "DataForge ETL": "",
-    "AetherFlow Orchestrator": "",
-    "NeoGraph Linker": "",
+    "DataForge ETL": "Data Engineering",
+    "AetherFlow Orchestrator": "Data Science",
+    "NeoGraph Linker": "Data Governance",
+    "Company Overview": "*"
+}
+
+PROJECT_TO_TASKS_MAP = {
+    "StreamSync Pipeline": "bi_team_task",
+    "DataForge ETL": "de_team_task",
+    "AetherFlow Orchestrator": "ds_team_task",
+    "NeoGraph Linker": "dg_team_task",
+    "Company Overview": "*"
+}
+
+PROJECT_TO_TASKS_MAP = {
+    "StreamSync Pipeline": "bi_team_task",
+    "DataForge ETL": "de_team_task",
+    "AetherFlow Orchestrator": "ds_team_task",
+    "NeoGraph Linker": "dg_team_task",
     "Company Overview": "*"
 }
 
@@ -48,7 +64,6 @@ if st.session_state.project_choice not in st.session_state.all_project_data:
     with st.spinner(f"Retriving {project_choice}'s Task Depenence"):
         task_dependence = db.get_task_dependence_graph()
 
-
     st.session_state.all_project_data[project_choice] = {
         "Task Assignment": {
             "graph": task_assignment,
@@ -66,7 +81,10 @@ if st.session_state.project_choice not in st.session_state.all_project_data:
         "collection/Employees": db.get_all_employees_by_team(PROJECT_TO_TEAM_MAP[project_choice])
     }
 
+# Retrieving data
 cur_project_data = st.session_state.all_project_data[project_choice]
+emp_info_dict = cur_project_data["collection/Employees"]
+task_info_dict = cur_project_data["collection/Tasks"]
 
 if "documents_text" not in st.session_state:
     st.session_state.documents_text = []
@@ -114,6 +132,7 @@ st.markdown(f"<h1 style='text-align: center;'>{project_choice}</h1>", unsafe_all
 st.markdown(f"<h2 style='text-align: center;'>Project Overview Dashboard</h1>", unsafe_allow_html=True)
 
 project_choice = st.selectbox("Current project:", PROJECT_LIST)
+st.session_state.project_choice = project_choice
 
 is_ready = True
 
@@ -200,8 +219,6 @@ st.markdown("### Overview")
 # Create a three-column layout
 col1, col2, col3 = st.columns(3)
 
-emp_info_dict = cur_project_data["collection/Employees"]
-task_info_dict = cur_project_data["collection/Tasks"]
 # First column: Summary tile + Information
 with col1:
     st.selectbox("employee_stat", ["Current Employees", "Active Employees"], label_visibility="collapsed")

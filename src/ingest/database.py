@@ -22,11 +22,18 @@ TASK_STATUS_LABEL_MAP = {
 def get_all_employees_by_team(team_name):
     # Access the employee vertex collection
     # employee_collection = db.collection('employee')  # Ensure this is the correct collection name
-    employee_query = f"""
-    FOR e IN employee
-        FILTER e.Team == '{team_name}'
-        RETURN e
-    """
+    print("searching for team", team_name)
+    if team_name != "*":
+        employee_query = f"""
+        FOR e IN employee
+            FILTER e.Team == '{team_name}'
+            RETURN e
+        """
+    else:
+        employee_query = f"""
+        FOR e IN employee
+            RETURN e
+        """
     # Fetch all employees from the collection
     employees = db.aql.execute(employee_query)  # Fetches all documents in the collection
     

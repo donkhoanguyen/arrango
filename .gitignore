@@ -3,3 +3,4 @@ venv/
 secrets.toml
 
 **/__pycache__
+node_modules/

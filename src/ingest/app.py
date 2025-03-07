@@ -1,3 +1,4 @@
+import json
 import streamlit as st
 # --- Page Layout ---
 st.set_page_config(layout="wide")  # Set to full-screen mode
@@ -88,6 +89,8 @@ if "openai_model" not in st.session_state:
 os.environ["OPENAI_API_KEY"] = st.sidebar.text_input("OpenAI API Key", type="password")
 
 st.sidebar.title("Upload Documents")
+uploaded_files = st.sidebar.file_uploader("Upload project-related documents (PDF only)",
+                                          accept_multiple_files=True, type=["pdf"])
 uploaded_files = st.sidebar.file_uploader("Upload project-related documents (PDF only)",
                                           accept_multiple_files=True, type=["pdf"])
 

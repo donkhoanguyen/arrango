@@ -98,7 +98,6 @@ def magic_ask_employee(employee):
     ask()
 
 def magic_ask_task(task):
-    st.chat_input(f"What do you want to ask about Task {task['TaskID']}?")
     title = f"Magic Ask about {task['TaskID']}"
    
     @st.dialog(title, width="large")

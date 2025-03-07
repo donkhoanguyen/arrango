@@ -40,6 +40,7 @@ if "all_project_data" not in st.session_state:
     st.session_state.all_project_data = {}
 
 if st.session_state.project_choice not in st.session_state.all_project_data:
+    print("reloading again)")
     with st.spinner(f"Retrieving {project_choice}'s Task Assignment"):
         task_assignment = db.get_bi_team_task_assignment()
     with st.spinner(f"Retrieving {project_choice}'s Employee Interaction"):
@@ -140,8 +141,9 @@ def render_graph(project_choice, graph_choice, graph_view):
         # Prepare the elements and styles to render
         elements, node_styles, edge_styles = render_function(graph)
 
+        graph_view_by_choice = VIEW_BY_GRAPH_CHOICE[graph_choice]
         # If is Magic View, then show default cose layouts and chatbot on the side
-        if graph_view == GRAPH_LIST[-1]:
+        if graph_view == graph_view_by_choice[-1]:
             st.warning("Magic View not implemented yet")
             graph_col, magic_col = st.columns([3, 1])
             with graph_col:
@@ -156,7 +158,6 @@ def render_graph(project_choice, graph_choice, graph_view):
         layout_options = "cose"
         # Employee Interaction
         if graph_choice == GRAPH_LIST[0]:
-            graph_view_by_choice = VIEW_BY_GRAPH_CHOICE[graph_choice]
             if graph_view == graph_view_by_choice[0]:
                 layout_options = graph_utils.get_layout_for_seniority_layers(graph)
             elif graph_view == graph_view_by_choice[1]:
@@ -165,7 +166,7 @@ def render_graph(project_choice, graph_choice, graph_view):
         # Task Dependence
         elif graph_choice == GRAPH_LIST[1]:
             if graph_view == graph_view_by_choice[0]:
-                layout_options = graph_utils.topo_sort_layered_layout(st.session_state.task_depend_graph)
+                layout_options = graph_utils.topo_sort_layered_layout(graph)
             elif graph_view == graph_view_by_choice[1]:
                 layout_options = "grid"
         
@@ -199,15 +200,17 @@ st.markdown("### Overview")
 # Create a three-column layout
 col1, col2, col3 = st.columns(3)
 
+emp_info_dict = cur_project_data["collection/Employees"]
+task_info_dict = cur_project_data["collection/Tasks"]
 # First column: Summary tile + Information
 with col1:
     st.selectbox("employee_stat", ["Current Employees", "Active Employees"], label_visibility="collapsed")
-    summary_tile("Current Employees", len(cur_project_data["collection/Employees"]), "Total number of employees in this project.", "#FF7F3E")
+    summary_tile("Current Employees", len(emp_info_dict), "Total number of employees in this project.", "#FF7F3E")
 
 # Second column: Summary tile + Information
 with col2:
     st.selectbox("task_stat", ["Remaining Tasks", "Active Tasks", "Total Story Points", "Remaining Story Points"], label_visibility="collapsed")
-    summary_tile("Remaining Tasks", len(cur_project_data["collection/Tasks"]), "Remaining number of tasks.", "#4CAF50")
+    summary_tile("Remaining Tasks", len(task_info_dict), "Remaining number of tasks.", "#4CAF50")
 
 # Third column: Summary tile + Information
 with col3:
@@ -217,8 +220,6 @@ with col3:
 st.markdown("---")
 
 emp_col, task_col = st.columns(2)
-emp_info_dict = cur_project_data["collection/Employees"]
-task_info_dict = cur_project_data["collection/Tasks"]
 with emp_col:
 
     st.markdown(f"### Active Employees ({len(emp_info_dict)})")
@@ -227,7 +228,7 @@ with emp_col:
     container = st.container(height=800)
     with container:
         # Create a div with a scrollable class
-        for empID in cur_project_data["collection/Employees"]:
+        for empID in emp_info_dict:
             employee_tile(emp_info_dict[empID])
 
 with task_col:
@@ -237,5 +238,5 @@ with task_col:
     container = st.container(height=800)
     with container:
         # Create a div with a scrollable class
-        for taskID in cur_project_data["collection/Tasks"]:
+        for taskID in task_info_dict:
             task_tile(task_info_dict[taskID])

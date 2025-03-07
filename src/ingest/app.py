@@ -14,7 +14,8 @@ from st_link_analysis import st_link_analysis
 
 VIEW_BY_GRAPH_CHOICE = {
     "Employee Interaction": ["Default (by hierarchy)", "Grid", "✨ Magic View"],
-    "Task Dependence": ["Default (by layers)", "Grid", "✨ Magic View"]
+    "Task Dependence": ["Default (by layers)", "Grid", "✨ Magic View"],
+    "Task Assignment": ["Default"],
 }
 
 
@@ -44,6 +45,10 @@ if "emp_interact_graph" not in st.session_state:
 if "task_depend_graph" not in st.session_state:
     with st.spinner("Retrieving task dependence graph..."):
         st.session_state.task_depend_graph = db.get_task_dependence_graph()
+
+if "bi_team_task_assignment" not in st.session_state:
+    with st.spinner("Retrieving task dependence graph..."):
+        st.session_state.bi_team_task_assignment = db.get_bi_team_task_assignment()
 
 if "main_graph_choice" not in st.session_state:
     st.session_state.main_graph_choice = "Task Dependence"
@@ -171,21 +176,39 @@ def render_task_dependence_graph():
         st_link_analysis(elements, layout_options, node_styles, edge_styles)
     
     accordion_graph_chatbot(task_depend_graph, "magic_ask/task_depend_graph")
+
+def render_bi_team_task_assignment():
+    bi_team_task_assignment= st.session_state.bi_team_task_assignment
+    elements, node_styles, edge_styles = db.retrieve_bi_team_task_assignment_graph(
+        bi_team_task_assignment,
+    )
+        
+    # Render the component
+    st.markdown("### Task Assignment Network")
+       
+    st_link_analysis(elements, "cose", node_styles, edge_styles)
+
+
 graph_choose_col, graph_view_col = st.columns(2)
 
 with graph_choose_col:
-    st.session_state.main_graph_choice = st.selectbox("Choose a graph to view", ["Employee Interaction", "Task Dependence"])
+    main_graph_choice = st.selectbox("Choose a graph to view", ["Employee Interaction", "Task Dependence", "Task Assignment"])
 
 with graph_view_col:
     view_choices = VIEW_BY_GRAPH_CHOICE[st.session_state.main_graph_choice]
     st.session_state.main_graph_view = st.selectbox("Choose how you want to view", view_choices)
 
-if st.session_state.main_graph_choice == "Employee Interaction":
-    with st.spinner("Retrieving your employees..."):
+st.session_state.main_graph_choice = main_graph_choice 
+
+if main_graph_choice == "Employee Interaction":
+    with st.spinner("Retrieving employees..."):
         render_employee_interaction_graph()
-elif st.session_state.main_graph_choice == "Task Dependence":
-    with st.spinner("Retrieving your tasks..."):
+elif main_graph_choice == "Task Dependence":
+    with st.spinner("Retrieving tasks..."):
         render_task_dependence_graph()
+elif main_graph_choice == "Task Assignment":
+    with st.spinner("Retrieving task assignments..."):
+        render_bi_team_task_assignment()
 
 
 # Project Overview Section

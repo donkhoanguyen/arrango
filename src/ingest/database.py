@@ -84,6 +84,8 @@ def get_employee_interact_graph():
 def get_task_dependence_graph():
     return nxadb.DiGraph(name="tasks_sprint1")
 
+def get_bi_team_task_assignment():
+    return nxadb.MultiDiGraph(name="bi_team_task_assignment")
 
 
 def retrieve_employee_interaction_graph(emp_interact_graph, emp_info_dict):
@@ -169,6 +171,91 @@ def retrieve_task_dependence_graph(task_interact_graph, task_info_dict):
     edge_styles = [
         EdgeStyle("Depends On", caption='label', directed=True),
     ]
+    elements = {
+        "nodes": nodes,
+        "edges": edges,
+    }
+
+    return elements, node_styles, edge_styles
+
+def retrieve_bi_team_task_assignment_graph(task_graph):
+    nodes = []
+    edges = []
+
+    # Mapping task statuses to labels and colors
+    TASK_STATUS_LABEL_MAP = {
+        "Planned": "PlannedTask",
+        "In Progress": "InProgressTask",
+        "Completed": "CompletedTask",
+        "Blocked": "BlockedTask",
+    }
+    TASK_COLOR_MAP = {
+        "PlannedTask": "#d3d3d3",
+        "InProgressTask": "#f39c12",
+        "CompletedTask": "#2ecc71",
+        "BlockedTask": "#e74c3c",
+    }
+    
+    # Employee seniority color mapping
+    EMPLOYEE_COLOR_MAP = {
+        "Lead": "#FF7F3E",
+        "Senior": "#4CAF50",
+        "Mid-Level": "#2196F3",
+        "Junior": "#FFC107",
+    }
+
+    for node, data in task_graph.nodes(data=True):
+        if node[:4] == "task":
+            if data["Status"] == "Planned":
+                continue
+            task_label = TASK_STATUS_LABEL_MAP.get(data["Status"], "PlannedTask")
+            nodes.append({
+                "data": {
+                    "id": node, 
+                    "label": task_label,
+                    "name": data["TaskID"],
+                    **data
+                }
+            })
+        else:
+            # Only render for BI team
+            if data["Team"] != "Business Intelligence":
+                continue
+            seniority = data["Seniority"]
+            nodes.append({
+                "data": {
+                    "id": node,
+                    "label": seniority,
+                    "name": f"{data['FirstName']} {data['LastName']}",
+                    **data
+                }
+            })
+
+    # Style mappings for nodes
+    node_styles = [
+        NodeStyle(label, TASK_COLOR_MAP[label], "name", "task") for label in TASK_STATUS_LABEL_MAP.values()
+    ] + [
+        NodeStyle(seniority, EMPLOYEE_COLOR_MAP[seniority], "name", "person") for seniority in EMPLOYEE_COLOR_MAP
+    ]
+    # Add edges
+    print(task_graph.edges.data())
+    for emp_from, task_to, data in task_graph.edges(data=True):
+        print(emp_from, task_to)
+        edges.append({
+            "data": {
+                "id": f"{emp_from}->{task_to}",
+                "label": data["relationship"],
+                "source": emp_from,
+                "target": task_to,
+            }
+        })
+
+    # Style mappings for edges
+    edge_styles = [
+        EdgeStyle("assigned", color="#E57373", caption='label', directed=True),
+        EdgeStyle("advised", color="#64B5F6", caption='label', directed=True),
+    ]
+
     elements = {
         "nodes": nodes,
         "edges": edges,

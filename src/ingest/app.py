@@ -8,7 +8,6 @@ import tempfile
 import os
 import database as db
 import graph as graph_utils
-import streamlit_nested_layout
 
 from component import *
 from st_link_analysis import st_link_analysis

@@ -32,7 +32,7 @@ def generate_image_metadata(image_url: str):
 # Tool 2: Analyze image metadata with @tool decorator
 @tool
 def analyze_image_metadata(metadata: dict):
-    """Check if image meets certain criteria."""
+    """Check if image meets certain criteria. If you have to use it, you must run generate_image_metadata first to get some, because the user will not provide for you"""
     if metadata["width"] >= 1280 and metadata["height"] >= 720 and metadata["size_kb"] <= 500:
         return {"status": "Valid", "message": "Image meets resolution and size requirements."}
     else:

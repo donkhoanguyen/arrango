@@ -1,5 +1,9 @@
 import os
 import streamlit as st
+import networkx as nx
+import pandas as pd
+import nx_arangodb as nxadb
+import re
 
 os.environ["LANGSMITH_TRACING"] = st.secrets["LANGSMITH_TRACING"]
 os.environ["LANGSMITH_ENDPOINT"] = st.secrets["LANGSMITH_ENDPOINT"]
@@ -12,26 +16,10 @@ from langchain_core.messages.ai import AIMessageChunk
 from typing import Literal
 from langgraph.prebuilt import create_react_agent
 from langchain_core.tools import tool
-
 from arango import ArangoClient
-
-import pandas as pd
-import numpy as np
-import networkx as nx
-import matplotlib.pyplot as plt
-from random import randint
-import re
-
-from langgraph.prebuilt import create_react_agent
-from langgraph.checkpoint.memory import MemorySaver
 from langchain_openai import ChatOpenAI
 from langchain_community.graphs import ArangoGraph
-from langchain_community.chains.graph_qa.arangodb import ArangoGraphQAChain
-from langchain_core.tools import tool
 
-import os
-import networkx as nx
-import nx_arangodb as nxadb
 
 db = ArangoClient(hosts="https://b61c3b83bfe6.arangodb.cloud:8529") \
     .db(username="root", 
@@ -40,33 +28,6 @@ db = ArangoClient(hosts="https://b61c3b83bfe6.arangodb.cloud:8529") \
         verify=True)
 
 model = ChatOpenAI(model="gpt-4o", temperature=0.7, api_key=st.secrets["OPENAI_API_KEY"])
-
-import nest_asyncio
-nest_asyncio.apply()
-
-
-# Tool 1: Generate image metadata with @tool decorator
-@tool
-def generate_image_metadata(image_url: str):
-    """Mock function to return image metadata."""
-    metadata = {
-        "url": image_url,
-        "width": 1920,
-        "height": 1080,
-        "format": "JPEG",
-        "size_kb": 350  # Image size in KB
-    }
-    return metadata  # Returns a dictionary
-
-# Tool 2: Analyze image metadata with @tool decorator
-@tool
-def analyze_image_metadata(metadata: dict):
-    """Check if image meets certain criteria. If you have to use it, you must run generate_image_metadata first to get some, because the user will not provide for you"""
-    if metadata["width"] >= 1280 and metadata["height"] >= 720 and metadata["size_kb"] <= 500:
-        return {"status": "Valid", "message": "Image meets resolution and size requirements."}
-    else:
-        return {"status": "Invalid", "message": "Image does not meet the required specs."}
-
 
 @tool
 def get_weather(city: Literal["nyc", "sf"]):
@@ -280,9 +241,7 @@ def ask_cpm_question(question, df, model_name="gpt-4o"):
     return python_to_text
 
 
-tools = [get_weather, generate_image_metadata, analyze_image_metadata, 
-         choose_graph, create_cpm_table,
-          ask_cpm_question]
+tools = [get_weather, choose_graph, create_cpm_table, ask_cpm_question]
 agent = create_react_agent(model, tools=tools)
 
 DEFAULT_CHAT_AVATAR_MAP = {

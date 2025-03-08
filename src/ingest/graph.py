@@ -101,13 +101,17 @@ def layered_topo_sort_by_seniority(G):
     # Here we just return the layers as is
     return [layers[i] for i in range(5) if layers[i]]
 
-def get_layout_for_seniority_layers(G):
+@st.cache_data
+def get_layout_for_seniority_layers(graph_name):
     """
     Convert the layered employee graph into a layout dict for Cytoscape.js based on seniority layers.
 
     :param G: NetworkX DiGraph representing the employee hierarchy
     :return: Cytoscape.js layout dict with positions of nodes for visualization
     """
+    print("getting graph name", graph_name)
+    G = st.session_state.GRAPH_CACHE[graph_name].graph
+    print(G)
     layers = layered_topo_sort_by_seniority(G)  # Get employees layered by seniority
     
     # Define the layout

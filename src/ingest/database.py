@@ -108,9 +108,10 @@ def get_employee_interact_graph(team):
     full_graph = nxadb.Graph(name="employee_interaction")
     if team == "*":
         return full_graph
-    
+    print(full_graph.nodes)
     filtered_nodes = {n for n, data in full_graph.nodes(data=True) if data["Team"] == team}
     team_graph = full_graph.copy().subgraph(filtered_nodes)
+    team_graph.name = f"{team}_employee_interaction"
     return team_graph
 
 def get_task_dependence_graph(tasks_col):

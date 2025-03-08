@@ -69,12 +69,17 @@ if "GRAPH_CACHE" not in st.session_state:
         GRAPH_CACHE[tasks_dependence_graph_name] = GraphWrapper(adb, None, tasks_dependence_graph_name,schema, description)
 
     # Preload employee interaction graph
-    schema = {
-        "node": ["employee"],
-        "edges": ["interacts with"],
-    }
-    description = "The graph of extended interaction and help between employees of the company"
-    GRAPH_CACHE["employee_interaction"] = GraphWrapper(adb, None, "employee_interaction", schema, description)
+    for project in PROJECT_TO_TEAM_MAP:
+        team = PROJECT_TO_TEAM_MAP[project]
+        schema = {
+            "node": ["employee"],
+            "edges": ["interacts with"],
+        }
+        description = "The graph of extended interaction and help between employees of the company"
+        if team == "*":
+            GRAPH_CACHE["employee_interaction"] = GraphWrapper(adb, None, "employee_interaction", schema, description)
+        else:
+            GRAPH_CACHE[f"{team}_employee_interaction"] = GraphWrapper(adb, None, f"{team}_employee_interaction", schema, description)
     
     # Preload task assignment graph
     schema = {
@@ -116,7 +121,7 @@ if project_choice not in st.session_state.all_project_data:
     employee_interaction = None
     with st.spinner(f"Retrieving {project_choice}'s Employee Interaction"):
         employee_interaction = db.get_employee_interact_graph(team)
-        GRAPH_CACHE["employee_interaction"].graph = employee_interaction
+        GRAPH_CACHE[f"{team}_employee_interaction"].graph = employee_interaction
 
     task_dependence = None
     if team != "*":
@@ -248,7 +253,7 @@ def render_graph(project_choice, graph_choice, graph_view):
         # Employee Interaction
         if graph_choice == GRAPH_LIST[0]:
             if graph_view == graph_view_by_choice[0]:
-                layout_options = graph_utils.get_layout_for_seniority_layers(graph)
+                layout_options = graph_utils.get_layout_for_seniority_layers(f"{PROJECT_TO_TEAM_MAP[project_choice]}_employee_interaction")
             elif graph_view == graph_view_by_choice[1]:
                 layout_options = "grid"
 
@@ -262,7 +267,6 @@ def render_graph(project_choice, graph_choice, graph_view):
         # Task Assignment
         elif graph_choice == GRAPH_LIST[2]:
             layout_options = "cose"
-            pass
         
         # Finally, render it out to frontend
         st_link_analysis(elements, layout_options, node_styles, edge_styles)

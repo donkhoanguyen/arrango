@@ -120,6 +120,147 @@ def choose_graph(question):
 
     return G_adb
 
+@tool
+def create_hits_table(G_adb):
+    """
+    Create a pandas DataFrame from the HITS analysis of our graph.
+
+    Args:
+        G_adb: The ArangoDB graph object
+
+    Returns:
+        A pandas DataFrame with the HITS analysis results
+    """
+    G_adb = nxadb.DiGraph(name="emp_interaction1")
+    hubs, authorities = nx.hits(G_adb)
+
+    print("got hub and authority")
+
+    # Create a DataFrame from hubs and authorities
+    hits_df = pd.DataFrame({
+        'EmpID': list(hubs.keys()),
+        'Hub_Score': list(hubs.values()),
+        'Authority_Score': list(authorities.values())
+    })
+
+    print(hits_df.head(10))
+
+    # Clean the Node column by removing 'employee/'
+    hits_df['EmpID'] = hits_df['EmpID'].str.replace('employee/', '')
+
+    # Sort by Hub Score in descending order
+    hits_df = hits_df.sort_values('Hub_Score', ascending=False)
+
+    # Reset the index
+    hits_df = hits_df.reset_index(drop=True)
+
+    return hits_df
+
+@tool
+def ask_hits_question(question, df, model_name="gpt-4o"):
+    """
+    Provide information about employees using Hyperlink-Induced Topic Search (HITS) to derive insight into: which employee should be on managerial track
+    and which one should be on technical track.
+
+    The Hub Score represents how likely they are to become managers.
+    The authority score represents how likely they are to remain in technical roles.
+    If asked about tendency of a specific employee, return that employee Hub and Authority score from their EmpID.
+    Else, answer to the best of your ability.
+    
+    Args:
+        question: string containing the question about the dataframe
+        df: pandas DataFrame with the HITS analysis results
+        model_name: Optional OpenAI model to use (default: gpt-4)
+    
+    Returns:
+        Answer from ChatGPT about the dataframe
+    """
+    llm = ChatOpenAI(temperature=0, model_name=model_name, api_key=st.secrets["OPENAI_API_KEY"])
+    
+    # Get dataframe info
+    df_info = df.info(buf=None, max_cols=None, memory_usage=None, show_counts=None)
+    df_head = df.head()
+    df_describe = df.describe()
+
+    print("1) Generating python code")
+    # Construct prompt
+    text_to_python = llm.invoke(f"""
+    I have a pandas dataframe with the following information:
+    
+    DataFrame Info:
+    {df_info}
+    
+    First few rows:
+    {df_head}
+    
+    Summary statistics:
+    {df_describe}
+    
+    Question: {question}
+    
+    Generate the Python Code required to answer the query using the `df` object.
+    Be very precise and think step by step.
+
+    Always set the last variable as `FINAL_RESULT`, which represents the answer to the original query.
+
+    Only provide python code that I can directly execute via `exec()`. Do not provide any instructions.
+
+    Make sure that `FINAL_RESULT` stores a short & consice answer. Avoid setting this variable to a long sequence.
+
+    Your code:
+    """).content
+
+    text_to_python_cleaned = re.sub(r"^```python\n|```$", "", text_to_python, flags=re.MULTILINE).strip()
+    
+    print('-'*10)
+    print(text_to_python_cleaned)
+    print('-'*10)
+
+    print("\n2) Executing python code")
+    global_vars = {"df": df}
+    local_vars = {}
+
+    try:
+        exec(text_to_python_cleaned, global_vars, local_vars)
+        text_to_python_final = text_to_python
+    except Exception as e:
+        print(f"EXEC ERROR: {e}")
+        return f"EXEC ERROR: {e}"
+    
+
+    print('-'*10)
+    FINAL_RESULT = local_vars["FINAL_RESULT"]
+    print(f"FINAL_RESULT: {FINAL_RESULT}")
+    print('-'*10)
+
+    print("3) Formulating final answer")
+
+    python_to_text = llm.invoke(f"""
+    I have a pandas dataframe with the following information: 
+                                
+    DataFrame Info:
+    {df_info}
+    
+    First few rows:
+    {df_head}
+    
+    Summary statistics:
+    {df_describe}
+
+    I have executed the following Python code to answer the query:
+    ---
+        {text_to_python_final}
+    ---
+
+    The `FINAL_RESULT` variable is set to the following: {FINAL_RESULT}.
+
+    Based on my original Query and FINAL_RESULT, generate a short and concise response to
+    answer my query.
+          
+    """).content
+    
+    return python_to_text
+
 @tool    
 def create_cpm_table(G_adb):
     """
@@ -281,8 +422,8 @@ def ask_cpm_question(question, df, model_name="gpt-4o"):
 
 
 tools = [get_weather, generate_image_metadata, analyze_image_metadata, 
-         choose_graph, create_cpm_table,
-          ask_cpm_question]
+         choose_graph, create_cpm_table, ask_cpm_question,
+         ask_hits_question, create_hits_table]
 agent = create_react_agent(model, tools=tools)
 
 DEFAULT_CHAT_AVATAR_MAP = {

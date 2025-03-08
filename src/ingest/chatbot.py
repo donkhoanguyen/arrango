@@ -100,7 +100,7 @@ def choose_graph(question):
     
     arango_graph = ArangoGraph(db)
 
-    graph = llm.invoke(f"""
+    graph_name = llm.invoke(f"""
     I have a graph database with the following information:
     
     Graph Schema:
@@ -111,16 +111,14 @@ def choose_graph(question):
 
     Given the user's question and our graph database schema, determine the right graph to query from.
 
-    Always set the last variable as `FINAL_RESULT`, which represents the answer to the original query.
-
-    Only provide python code that I can directly execute via `exec()`. Do not provide any instructions.
-
-    Make sure that `FINAL_RESULT` stores a short & consice answer. Avoid setting this variable to a long sequence.
+    Give me nothing but the name of the graph. Do not provide any additional information.
 
     Your code:
     """).content
 
-    return graph
+    G_adb = nxadb.DiGraph(name=graph_name)
+
+    return G_adb
 
 @tool    
 def create_cpm_table(G_adb):
@@ -187,6 +185,7 @@ def ask_cpm_question(question, df, model_name="gpt-4o"):
     If asked questions about what tasks to do next,  determine the order in which tasks should be executed using the Critical Path Method (CPM). 
     Tasks should be sorted by latest start (ascending) to ensure that tasks with the tightest deadlines are completed first. 
     If two tasks have the same latest start, prioritize the one with the lower slack time to avoid delaying critical tasks.
+    Normally give the top 5 tasks to do next.
     
     Args:
         question: string containing the question about the dataframe
@@ -281,7 +280,9 @@ def ask_cpm_question(question, df, model_name="gpt-4o"):
     return python_to_text
 
 
-tools = [get_weather, generate_image_metadata, analyze_image_metadata, ask_cpm_question]
+tools = [get_weather, generate_image_metadata, analyze_image_metadata, 
+         choose_graph, create_cpm_table,
+          ask_cpm_question]
 agent = create_react_agent(model, tools=tools)
 
 DEFAULT_CHAT_AVATAR_MAP = {

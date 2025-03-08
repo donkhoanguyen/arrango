@@ -18,15 +18,30 @@ TASK_STATUS_LABEL_MAP = {
     "Blocked": "BlockedTask"
 }
 
+TASKS_TO_PROJECT_MAP = {
+    "bi_tasks": "StreamSync Pipeline",
+    "de_tasks": "DataForge ETL",
+    "ds_tasks": "AetherFlow Orchestrator",
+    "dg_tasks": "NeoGraph Linker",
+    "*": "Company Overview"
+}
+
 # Function to get all employee information as a dictionary with EmpID as the key
 def get_all_employees_by_team(team_name):
     # Access the employee vertex collection
     # employee_collection = db.collection('employee')  # Ensure this is the correct collection name
-    employee_query = f"""
-    FOR e IN employee
-        FILTER e.Team == '{team_name}'
-        RETURN e
-    """
+    print("searching for team", team_name)
+    if team_name != "*":
+        employee_query = f"""
+        FOR e IN employee
+            FILTER e.Team == '{team_name}'
+            RETURN e
+        """
+    else:
+        employee_query = f"""
+        FOR e IN employee
+            RETURN e
+        """
     # Fetch all employees from the collection
     employees = db.aql.execute(employee_query)  # Fetches all documents in the collection
     
@@ -54,11 +69,18 @@ def get_all_employees_by_team(team_name):
     return employee_dict
 
 # Function to get all task information as a dictionary with as TaskID the key
-def get_all_tasks():
-    task_collection = db.collection('task')  # Ensure this is the correct collection name
-    
-    # Fetch all employees from the collection
-    tasks = task_collection.all()  # Fetches all documents in the collection
+def get_all_tasks(tasks_col):
+    if tasks_col == "*":
+        collections = db.aql.execute("FOR c IN COLLECTIONS() FILTER c.name LIKE '%_tasks' RETURN c.name")
+        # Retrieve and flatten documents into one list
+        tasks = [
+            {**doc, "_collection": collection}  # Add collection name as metadata if needed
+            for collection in collections
+            for doc in db.collection(collection).all()
+        ]
+    else:
+        task_collection = db.collection(tasks_col)  # Ensure this is the correct collection name
+        tasks = task_collection.all()  # Fetches all documents in the collection
     
     # Create a dictionary to store employee info with EmpID as the key
     task_dict = {}
@@ -75,27 +97,33 @@ def get_all_tasks():
             "StartTime": task.get("StartTime"),
             "EstimatedFinishTime": task.get("EstimatedFinishTime"),
             "Status": task.get("Status"),
-            # "Status": random.choice(list(TASK_STATUS_LABEL_MAP.keys())),
-            "ActualFinishTime": task.get("ActualFinishTime")
+            "ActualFinishTime": task.get("ActualFinishTime"),
+            "Project": TASKS_TO_PROJECT_MAP[tasks_col if tasks_col != "*" else task["_collection"]]
         }
         task_dict[f"task/{task['_key']}"] = task_info
     
     return task_dict
 
-def get_employee_interact_graph():
-    return nxadb.Graph(name="employee_interaction")
+def get_employee_interact_graph(team):
+    full_graph = nxadb.Graph(name="employee_interaction")
+    if team == "*":
+        return full_graph
+    
+    filtered_nodes = {n for n, data in full_graph.nodes(data=True) if data["Team"] == team}
+    team_graph = full_graph.copy().subgraph(filtered_nodes)
+    return team_graph
 
-def get_task_dependence_graph():
-    return nxadb.DiGraph(name="tasks_sprint1")
+def get_task_dependence_graph(tasks_col):
+    return nxadb.DiGraph(name=f"{tasks_col}_dependence_graph")
 
-def get_bi_team_task_assignment():
-    return nxadb.MultiDiGraph(name="bi_team_task_assignment")
+def get_task_assignment(tasks_col):
+    return nxadb.MultiDiGraph(name=f"bi_team_task_assignment")
+    # return nxadb.MultiDiGraph(name=f"{tasks_col}_task_assignment")
 
 
 def retrieve_employee_interaction_graph(emp_interact_graph):
     nodes = []
     edges = []
-    
     for employee_node, employee_info in emp_interact_graph.nodes(data=True):
         seniority = employee_info["Seniority"] 
 
@@ -118,7 +146,10 @@ def retrieve_employee_interaction_graph(emp_interact_graph):
         NodeStyle("Employee", "#9C27B0", "name", "person"),       # Purple
     ]
     for emp_from, emp_to in emp_interact_graph.edges:
-        if (emp_from == "employee/0" or emp_to == "employee/0"):
+        if (
+            emp_from == "employee/0"
+            or emp_to == "employee/0"
+        ):
             continue
         edges.append({
             "data": {

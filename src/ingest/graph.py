@@ -1,4 +1,4 @@
-from collections import deque
+import streamlit as st
 import networkx as nx
 
 SENIORITY_LAYER_MAP = {
@@ -24,7 +24,8 @@ def extract_dag_subgraphs(G):
 
     return dag_subgraphs, single_nodes
 
-def topo_sort_layered_layout(G, fit=True, padding=30, spacing_factor=1, animate=False, animation_duration=500):
+@st.cache_data
+def topo_sort_layered_layout(graph_name, fit=True, padding=30, spacing_factor=1, animate=False, animation_duration=500):
     """
     Converts a NetworkX directed graph into a layered layout for Cytoscape.js, 
     extracting and visualizing separate DAGs distinctly.
@@ -32,6 +33,7 @@ def topo_sort_layered_layout(G, fit=True, padding=30, spacing_factor=1, animate=
     :param G: A directed graph (DiGraph) from NetworkX
     :return: A dictionary with Cytoscape.js layout options
     """
+    G = st.session_state.GRAPH_CACHE[graph_name].graph
     dag_subgraphs, single_nodes = extract_dag_subgraphs(G.copy())
     positions = {}
     

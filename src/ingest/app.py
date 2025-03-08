@@ -255,7 +255,7 @@ def render_graph(project_choice, graph_choice, graph_view):
         # Task Dependence
         elif graph_choice == GRAPH_LIST[1]:
             if graph_view == graph_view_by_choice[0]:
-                layout_options = graph_utils.topo_sort_layered_layout(graph)
+                layout_options = graph_utils.topo_sort_layered_layout(graph.name)
             elif graph_view == graph_view_by_choice[1]:
                 layout_options = "grid"
         
@@ -267,7 +267,7 @@ def render_graph(project_choice, graph_choice, graph_view):
         # Finally, render it out to frontend
         st_link_analysis(elements, layout_options, node_styles, edge_styles)
         print(f"Current chatbot for {graph.name}")
-        accordion_graph_chatbot(GRAPH_CACHE[graph.name], f"{project_choice}/magic_ask/{graph_choice}")
+        return graph.name
 
 
 graph_choose_col, graph_view_col = st.columns(2)
@@ -282,7 +282,9 @@ with graph_view_col:
     st.session_state.main_graph_view = main_graph_view
 print("Current choice", main_graph_choice)
 
-render_graph(project_choice, main_graph_choice, main_graph_view)
+current_graph_name = render_graph(project_choice, main_graph_choice, main_graph_view)
+
+accordion_graph_chatbot(GRAPH_CACHE[current_graph_name], f"{project_choice}/magic_ask/{main_graph_choice}")
 
 # Project Overview Section
 st.markdown("### Overview")

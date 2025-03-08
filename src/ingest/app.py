@@ -58,7 +58,7 @@ if "GRAPH_CACHE" not in st.session_state:
         tasks_dependence_graph_name = f"{tasks_col}_dependence_graph"
         schema = {
             "node": ["task"],
-            "edges": ["depends on"]
+            "edges": ["depends on"],
             "tasks_col": tasks_col,
         }
         description = f"This is the graph of task dependence for the project {project}"
@@ -78,6 +78,10 @@ if "GRAPH_CACHE" not in st.session_state:
         "nodes": ["task", "employee"],
         "edges": ["assigned to", "advised"]
     }
+    description = "The graph of task assignment between tasks and employees"
+    GRAPH_CACHE["bi_team_task_assignment"] = GraphWrapper(adb, None, "bi_team_task_assignment", schema, description)
+
+    st.session_state.GRAPH_CACHE = GRAPH_CACHE
 
 GRAPH_CACHE: dict[str, GraphWrapper] = st.session_state.GRAPH_CACHE
 
@@ -104,15 +108,18 @@ if project_choice not in st.session_state.all_project_data:
     if team != "*":
         with st.spinner(f"Retrieving {project_choice}'s Task Assignment"):
             task_assignment = db.get_task_assignment(team_tasks)
+            GRAPH_CACHE["bi_team_task_assignment"].graph = task_assignment
         
     employee_interaction = None
     with st.spinner(f"Retrieving {project_choice}'s Employee Interaction"):
         employee_interaction = db.get_employee_interact_graph(team)
+        GRAPH_CACHE["employee_interaction"].graph = employee_interaction
 
     task_dependence = None
     if team != "*":
         with st.spinner(f"Retrieving {project_choice}'s Task Depenence"):
             task_dependence = db.get_task_dependence_graph(team_tasks)
+            GRAPH_CACHE[f"{team_tasks}_dependence_graph"]
     
     # Set data
     st.session_state.all_project_data[project_choice] = {
@@ -132,13 +139,6 @@ if project_choice not in st.session_state.all_project_data:
         "collection/Employees": emp_col,
     }
 
-    # Update graph data in the graph cache
-    
-
-    task_assignment_wrapper: GraphWrapper = GraphWrapper(
-        task_assignment,
-        tasks_col 
-    )
 
 # Retrieving data
 cur_project_data = st.session_state.all_project_data[project_choice]

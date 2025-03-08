@@ -4,12 +4,14 @@ from langchain_core.messages import BaseMessage, ToolMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph.message import add_messages
 from langgraph.graph import StateGraph, END
+
+# Set up jinja
 from jinja2 import Environment, FileSystemLoader
+env = Environment(loader=FileSystemLoader("./agent/prompt"))
 
 from agent.graph_cache import GraphWrapper, choose_graph
 from agent.utils import get_weather
 
-env = Environment(loader=FileSystemLoader("./prompt"))
 
 # Set up tools
 tools = [get_weather, choose_graph]

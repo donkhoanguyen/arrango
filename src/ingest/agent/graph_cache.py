@@ -1,7 +1,9 @@
 import json
+from typing import Any, Dict
 from langchain_openai import ChatOpenAI
 import nx_arangodb as nxadb
 
+from pydantic import BaseModel, BeforeValidator, field_serializer
 from langchain_core.tools import tool
 from arango.database import StandardDatabase
 from agent import env
@@ -73,7 +75,7 @@ class GraphWrapper:
 
 choose_graph_template = env.get_template("choose_graph_prompt.jinja")
 @tool
-def choose_graph(graph_cache: dict[str, GraphWrapper], query: str, context: str):
+def choose_graph(graph_cache: dict[str, Any], query: str, context: str):
     """
     Given the user's query and original context on why this is asked, choose the
     most appropriate graph to load for subsequent queries from a list of graphs

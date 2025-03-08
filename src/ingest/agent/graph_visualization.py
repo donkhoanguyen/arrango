@@ -30,7 +30,7 @@ class GraphVisualizationRequest:
     def render(self):
         st_link_analysis(self.elements, self.layout, self.node_styles, self.edge_styles)
 
-graph_viz_template = env.get_template("graph_visualization_prompt.jinja")
+graph_viz_template = env.get_template("visualize_graph_layout_prompt.jinja")
 @tool
 def visualize_graph(graph_wrapper: Any, query: str, context: str):
     """
@@ -100,23 +100,27 @@ def visualize_graph(graph_wrapper: Any, query: str, context: str):
         "full_schema": graph_wrapper.get_full_schema()
     })
     
+    print(prompt)
     response = llm.invoke(prompt)
     layout = response.content
-    
+    print("Layout", layout)
+    trimmed_layout = layout[1:-1]
     # Option 1: Choose preset layout
-    if layout in PRESET_LAYOUT_OPTION:
+    if trimmed_layout in PRESET_LAYOUT_OPTION:
         return GraphVisualizationRequest(
             graph_wrapper,
             elements,
-            layout,
+            trimmed_layout,
             node_styles,
             edge_styles
-        )
+        ), f"Visualized with preset layout {layout}"
     
     # Option 2: Generate using python code
     print('-'*10)
     print("\n2) Executing NetworkX code")
     
+    if "python" not in layout:
+        return None, "Error: You might not have generated Python code"
     layout_code =  re.sub(r"^```python\n|```$", "", layout, flags=re.MULTILINE).strip()
     
     global_vars = {"G": G, "nx": nx}
@@ -132,7 +136,7 @@ def visualize_graph(graph_wrapper: Any, query: str, context: str):
         except Exception as e:
             print(f"EXEC ERROR: {e}")
             if attempt == MAX_ATTEMPTS:
-                return "Error"
+                return None, "Error: unable to run custom layout code"
             attempt += 1
 
     print('-'*10)
@@ -146,4 +150,4 @@ def visualize_graph(graph_wrapper: Any, query: str, context: str):
         FINAL_RESULT,
         node_styles,
         edge_styles
-    ) 
+    ), f"Visualized with custom layout ```{json.dumps(FINAL_RESULT, indent=4)}```"

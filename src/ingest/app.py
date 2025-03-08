@@ -60,7 +60,7 @@ if "GRAPH_CACHE" not in st.session_state:
             continue
         tasks_dependence_graph_name = f"{tasks_col}_dependence_graph"
         schema = {
-            "node": ["task"],
+            "nodes": ["task"],
             "edges": ["depends on"],
             "tasks_col": tasks_col,
         }
@@ -72,7 +72,7 @@ if "GRAPH_CACHE" not in st.session_state:
     for project in PROJECT_TO_TEAM_MAP:
         team = PROJECT_TO_TEAM_MAP[project]
         schema = {
-            "node": ["employee"],
+            "nodes": ["employee"],
             "edges": ["interacts with"],
         }
         description = "The graph of extended interaction and help between employees of the company"

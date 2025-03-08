@@ -13,9 +13,10 @@ env = Environment(loader=FileSystemLoader("./agent/prompt"))
 
 from agent.graph_cache import GraphWrapper, choose_graph
 from agent.utils import get_weather
+from agent.graph_visualization import visualize_graph
 
 # Set up tools
-tools = [get_weather, choose_graph]
+tools = [get_weather, choose_graph, visualize_graph]
 tools_by_name = {tool.name: tool for tool in tools}
 
 # Set up OpenAI model
@@ -68,18 +69,20 @@ def tool_node(state: AgentState):
             state["messages"] = outputs
             state["chosen_graph_name"] = graph_name
             return state
-        elif tool_name == "graph_visualize":
+        elif tool_name == "visualize_graph":
             graph_wrapper = state["graph_cache"].get(state["chosen_graph_name"], None)
+            print("chosen graph name", state["chosen_graph_name"])
+            print("chosen bitch", graph_wrapper)
             if not graph_wrapper:
                 outputs.append(
                     ToolMessage(
-                        content = "You have not chosen a graph yet!",
+                        content = "You have not chosen a graph yet, do not attempt any more!",
                         name=tool_call["name"],
                         tool_call_id=tool_call["id"],
                     )
                 )
             else:
-                graph_viz_request = graph_visualize.invoke(input={
+                graph_viz_request, message = visualize_graph.invoke(input={
                     "graph_wrapper": graph_wrapper,
                     "query": state["original_query"],
                     "context": state["original_context"]
@@ -88,7 +91,7 @@ def tool_node(state: AgentState):
                 state["visualize_request"] = graph_viz_request
                 outputs.append(
                     ToolMessage(
-                        content = "Visualization request processed!",
+                        content = message,
                         name=tool_call["name"],
                         tool_call_id=tool_call["id"],
                     )

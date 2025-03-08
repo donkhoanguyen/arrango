@@ -288,7 +288,7 @@ class ChatInstance:
                     st.markdown("Tool Response:")
                     st.markdown(f"```\n{message.content}\n```")
                     # self.append_message({"role": "tool", "name": message.name, "content": message.content})
-                yield ""
+                yield "\n [using tool]\n"
             
             if isinstance(message, AIMessageChunk):
                 if metadata["langgraph_node"] == "tools":

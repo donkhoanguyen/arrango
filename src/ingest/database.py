@@ -99,9 +99,11 @@ def get_all_tasks(tasks_col):
 
 def get_employee_interact_graph(team):
     full_graph = nxadb.Graph(name="employee_interaction")
+    # TODO: temporary  
+    return full_graph
     if team == "*":
         return full_graph
-    print(full_graph.nodes)
+    
     filtered_nodes = {n for n, data in full_graph.nodes(data=True) if data["Team"] == team}
     team_graph = full_graph.copy().subgraph(filtered_nodes)
     team_graph.name = f"{team}_employee_interaction"

@@ -81,7 +81,8 @@ class GraphWrapper:
             full_schema["nodes"][node] = NODE_SCHEMA[node]
         
         for edge in self.schema["edges"]:
-            full_schema["edges"][edge] = NODE_SCHEMA[edge]
+            print(EDGE_SCHEMA)
+            full_schema["edges"][edge] = EDGE_SCHEMA[edge]
 
         return full_schema
 

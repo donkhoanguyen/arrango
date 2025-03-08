@@ -4,6 +4,7 @@ import nx_arangodb as nxadb
 
 from langchain_core.tools import tool
 from arango.database import StandardDatabase
+from agent import env
 
 NODE_SCHEMA = {
     "employee": {
@@ -70,6 +71,7 @@ class GraphWrapper:
         
         self.graph = nxadb.DiGraph(name=self.name, db=self.db)
 
+choose_graph_template = env.get_template("choose_graph_prompt.jinja")
 @tool
 def choose_graph(graph_cache: dict[str, GraphWrapper], query: str, context: str):
     """
@@ -90,27 +92,14 @@ def choose_graph(graph_cache: dict[str, GraphWrapper], query: str, context: str)
     
     graph_list = [str(graph_cache[graph_name]) for graph_name in graph_cache] 
       
-    prompt = f"""
-        You are a master database system manager. You are responsible for choosing
-        the appropriate graphs with a client's query and the original context on
-        what specifics might the client be asking.
-        Query: {query}
-        Original Context: {context} 
-        
-        Your graph database system has the following types of nodes: {NODE_SCHEMA}
-        and the following types of edges: {EDGE_SCHEMA}.
-        
-        You have these following graph databases along with their schema and their brief
-        description: {graph_list}
-        
-        With the above information, first give a brief reason why you would choose this,
-        and then the chosen graph name. You MUST return in only JSON format, as follows:
-        {"{"} 
-        "reason": "brief reason why you would choose this graph",
-        "name": "the name of the chosen graph name"
-        {"}"} 
-    """
-    print(prompt) 
+    prompt = choose_graph_template.render({
+        "query": query,
+        "context": context,
+        "NODE_SCHEMA": NODE_SCHEMA,
+        "EDGE_SCHEMA": EDGE_SCHEMA,
+        "graph_list": graph_list,
+    })
+    
     response = llm.invoke(prompt)
     
     response_json = json.loads(response)

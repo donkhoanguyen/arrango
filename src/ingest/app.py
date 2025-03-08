@@ -21,18 +21,10 @@ PROJECT_TO_TEAM_MAP = {
 }
 
 PROJECT_TO_TASKS_MAP = {
-    "StreamSync Pipeline": "bi_team_task",
-    "DataForge ETL": "de_team_task",
-    "AetherFlow Orchestrator": "ds_team_task",
-    "NeoGraph Linker": "dg_team_task",
-    "Company Overview": "*"
-}
-
-PROJECT_TO_TASKS_MAP = {
-    "StreamSync Pipeline": "bi_team_task",
-    "DataForge ETL": "de_team_task",
-    "AetherFlow Orchestrator": "ds_team_task",
-    "NeoGraph Linker": "dg_team_task",
+    "StreamSync Pipeline": "bi_tasks",
+    "DataForge ETL": "de_tasks",
+    "AetherFlow Orchestrator": "ds_tasks",
+    "NeoGraph Linker": "dg_tasks",
     "Company Overview": "*"
 }
 
@@ -55,15 +47,25 @@ project_choice = st.session_state.project_choice
 if "all_project_data" not in st.session_state:
     st.session_state.all_project_data = {}
 
-if st.session_state.project_choice not in st.session_state.all_project_data:
-    print("reloading again)")
+if project_choice not in st.session_state.all_project_data:
+    # Retrieve collections
+    with st.spinner(f"Retrieving {project_choice}'s List of Employees"):
+        emp_col = db.get_all_employees_by_team(PROJECT_TO_TEAM_MAP[project_choice])
+        
+    with st.spinner(f"Retrieving {project_choice}'s List of Tasks"):
+        tasks_col = db.get_all_tasks(PROJECT_TO_TASKS_MAP[project_choice])
+
+    # Retrieve graphs
     with st.spinner(f"Retrieving {project_choice}'s Task Assignment"):
         task_assignment = db.get_bi_team_task_assignment()
+        
     with st.spinner(f"Retrieving {project_choice}'s Employee Interaction"):
         employee_interaction = db.get_employee_interact_graph()
-    with st.spinner(f"Retriving {project_choice}'s Task Depenence"):
-        task_dependence = db.get_task_dependence_graph()
 
+    with st.spinner(f"Retrieving {project_choice}'s Task Depenence"):
+        task_dependence = db.get_task_dependence_graph(PROJECT_TO_TASKS_MAP[project_choice])
+    
+    # Set data
     st.session_state.all_project_data[project_choice] = {
         "Task Assignment": {
             "graph": task_assignment,
@@ -77,8 +79,8 @@ if st.session_state.project_choice not in st.session_state.all_project_data:
             "graph": task_dependence,
             "render": db.retrieve_task_dependence_graph,
         },
-        "collection/Tasks": db.get_all_tasks(),
-        "collection/Employees": db.get_all_employees_by_team(PROJECT_TO_TEAM_MAP[project_choice])
+        "collection/Tasks": tasks_col,
+        "collection/Employees": emp_col,
     }
 
 # Retrieving data
@@ -132,7 +134,11 @@ st.markdown(f"<h1 style='text-align: center;'>{project_choice}</h1>", unsafe_all
 st.markdown(f"<h2 style='text-align: center;'>Project Overview Dashboard</h1>", unsafe_allow_html=True)
 
 project_choice = st.selectbox("Current project:", PROJECT_LIST)
-st.session_state.project_choice = project_choice
+
+if project_choice != st.session_state.project_choice:
+    st.session_state.project_choice = project_choice
+    st.rerun()
+
 
 is_ready = True
 

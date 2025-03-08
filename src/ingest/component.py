@@ -96,7 +96,7 @@ def magic_ask_employee(employee):
     def ask():
         context = f"You are answering question about this employee, here is their details {employee}"
         chatbot = ChatInstance(f"magic_ask/{employee['EmpID']}", context)
-        chatbot.render()
+        # chatbot.render()
     ask()
 
 def magic_ask_task(task):

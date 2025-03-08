@@ -61,8 +61,8 @@ def get_all_employees_by_team(team_name):
     return employee_dict
 
 # Function to get all task information as a dictionary with as TaskID the key
-def get_all_tasks():
-    task_collection = db.collection('task')  # Ensure this is the correct collection name
+def get_all_tasks(tasks_col):
+    task_collection = db.collection(tasks_col)  # Ensure this is the correct collection name
     
     # Fetch all employees from the collection
     tasks = task_collection.all()  # Fetches all documents in the collection
@@ -92,8 +92,8 @@ def get_all_tasks():
 def get_employee_interact_graph():
     return nxadb.Graph(name="employee_interaction")
 
-def get_task_dependence_graph():
-    return nxadb.DiGraph(name="tasks_sprint1")
+def get_task_dependence_graph(tasks_col):
+    return nxadb.DiGraph(name=f"{tasks_col}_dependence_graph")
 
 def get_bi_team_task_assignment():
     return nxadb.MultiDiGraph(name="bi_team_task_assignment")

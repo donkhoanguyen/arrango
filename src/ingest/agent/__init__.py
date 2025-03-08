@@ -6,13 +6,13 @@ from langgraph.graph.message import add_messages
 from langgraph.graph import StateGraph, END
 from jinja2 import Environment, FileSystemLoader
 
-from agent.graph_cache import GraphWrapper
+from agent.graph_cache import GraphWrapper, choose_graph
 from agent.utils import get_weather
 
 env = Environment(loader=FileSystemLoader("./prompt"))
 
 # Set up tools
-tools = [get_weather]
+tools = [get_weather, choose_graph]
 tools_by_name = {tool.name: tool for tool in tools}
 
 # Set up OpenAI model
@@ -41,45 +41,31 @@ class AgentState:
 def tool_node(state: AgentState):
     """logic here"""
     outputs = []
-    for tool_call in state["messages"][-1].tool_calls:
-        print('STATE:', state)
+    for tool_call in state.messages[-1].tool_calls:
         # print("TOOL CALL", tool_call)
         tool_name = tool_call["name"]
         if tool_name == "choose_graph":
-            tool_result = tools_by_name[tool_call["name"]].invoke(tool_call["args"])
-            # print("CHOOSE GRAPH GOT OUTPUT:", tool_result)
+            graph_name, reason = choose_graph.invoke(state.graph_cache, state.original_query, state.original_context)
             outputs.append(
                 ToolMessage(
-                    # content=json.dumps(tool_result),
+                    content=f"Graph {graph_name} has been chosen with reason '{reason}'",
+                    name=tool_call["name"],
+                    tool_call_id=tool_call["id"],
+                )
+            )
+            state.messages = outputs
+            state.chosen_graph_name = graph_name
+            return state
+        else:
+            tool_result = tools_by_name[tool_name].invoke(tool_call["args"])
+            outputs.append(
+                ToolMessage(
                     content = tool_result,
                     name=tool_call["name"],
                     tool_call_id=tool_call["id"],
                 )
             )
-            return {'G_adb': tool_result, "messages": outputs}
-        # print("returned", tool_result)
-        if tool_name == "create_cpm_table":
-            G_adb = state["G_adb"]
-            tool_result = tools_by_name[tool_call["name"]].invoke({"G_adb": G_adb})
-            outputs.append(
-                ToolMessage(
-                    content=tool_result,
-                    name=tool_call["name"],
-                    tool_call_id=tool_call["id"],
-                )
-            )
-            return {'cpm_df': tool_result, "messages": outputs}
-        if tool_name == "ask_cpm_question":
-            cpm_df = state["cpm_df"]
-            tool_result = tools_by_name[tool_call["name"]].invoke({"df": cpm_df, "question" :tool_call["args"]})
-            outputs.append(
-                ToolMessage(
-                    content=tool_result,
-                    name=tool_call["name"],
-                    tool_call_id=tool_call["id"],
-                )
-            )
-            state["messages"] = outputs
+            state.messages = outputs
             return state
 
 # Define the node that calls the model
@@ -98,15 +84,17 @@ def call_model(
             - If necessary, further analyze the output dataframe to formulate answers to the user's question \
         "
     )
-    response = model.invoke([system_prompt] + state["messages"], config)
-    # We return a list, because this will get added to the existing list
-    state["messages"] = [response]
-    return {"messages": [response], "question": "fuck you"}
+    # Get response
+    response = model.invoke([system_prompt] + state.messags, config)
+    
+    # Persist state
+    state.messages = [response]
+    return state
 
 
 # Define the conditional edge that determines whether to continue or not
 def should_continue(state: AgentState):
-    messages = state["messages"]
+    messages = state.messages
     last_message = messages[-1]
     # If there is no function call, then we finish
     if not last_message.tool_calls:
@@ -116,7 +104,6 @@ def should_continue(state: AgentState):
         return "continue"
 
 def create_new_agent():
-
     # Define a new graph
     workflow = StateGraph(AgentState)
 

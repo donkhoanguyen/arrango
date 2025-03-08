@@ -282,8 +282,7 @@ class ChatInstance:
         self.append_message({"role": "user", "content": user_msg})
 
     def process_stream(self, stream):
-        for chunk in stream:
-            message = chunk[0]
+        for message, metadata in stream:
             if isinstance(message, ToolMessage):
                 with st.expander(f"Used tool [{message.name}]"):
                     st.markdown("Tool Response:")
@@ -292,6 +291,9 @@ class ChatInstance:
                 yield ""
             
             if isinstance(message, AIMessageChunk):
+                if metadata["langgraph_node"] == "tools":
+                    yield ""
+                else:
                     yield message.content
 
     def render(self):

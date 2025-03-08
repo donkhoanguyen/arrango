@@ -28,6 +28,8 @@ PROJECT_TO_TASKS_MAP = {
     "Company Overview": "*"
 }
 
+GRAPH_TYPE = ["Employee Interaction", "Task Dependence", "Task Assignment"]
+
 VIEW_BY_GRAPH_CHOICE = {
     "Employee Interaction": ["Default (by hierarchy)", "Grid", "✨ Magic View"],
     "Task Dependence": ["Default (by layers)", "Grid", "✨ Magic View"],
@@ -209,13 +211,14 @@ def render_graph(project_choice, graph_choice, graph_view):
 graph_choose_col, graph_view_col = st.columns(2)
 
 with graph_choose_col:
-    main_graph_choice = st.selectbox("Choose a graph to view", ["Employee Interaction", "Task Dependence", "Task Assignment"])
+    main_graph_choice = st.selectbox("Choose a graph to view", GRAPH_TYPE, index=GRAPH_TYPE.index(main_graph_choice))
     st.session_state.main_graph_choice = main_graph_choice
 
 with graph_view_col:
     view_choices = VIEW_BY_GRAPH_CHOICE[main_graph_choice]
     main_graph_view = st.selectbox("Choose how you want to view", view_choices)
     st.session_state.main_graph_view = main_graph_view
+print("Current choice", main_graph_choice)
 
 render_graph(project_choice, main_graph_choice, main_graph_view)
 

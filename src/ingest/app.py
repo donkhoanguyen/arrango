@@ -19,7 +19,6 @@ PROJECT_TO_TEAM_MAP = {
     "NeoGraph Linker": "Data Governance",
     "Company Overview": "*"
 }
-
 PROJECT_TO_TASKS_MAP = {
     "StreamSync Pipeline": "bi_tasks",
     "DataForge ETL": "de_tasks",
@@ -54,21 +53,28 @@ if project_choice not in st.session_state.all_project_data:
     team_tasks = PROJECT_TO_TASKS_MAP[project_choice]
 
     # Retrieve collections
+    emp_col = None
     with st.spinner(f"Retrieving {project_choice}'s List of Employees"):
         emp_col = db.get_all_employees_by_team(team)
-        
+
+    tasks_col = None
     with st.spinner(f"Retrieving {project_choice}'s List of Tasks"):
         tasks_col = db.get_all_tasks(team_tasks)
 
     # Retrieve graphs
-    with st.spinner(f"Retrieving {project_choice}'s Task Assignment"):
-        task_assignment = db.get_task_assignment(team_tasks)
+    task_assignment = None
+    if team != "*":
+        with st.spinner(f"Retrieving {project_choice}'s Task Assignment"):
+            task_assignment = db.get_task_assignment(team_tasks)
         
+    employee_interaction = None
     with st.spinner(f"Retrieving {project_choice}'s Employee Interaction"):
         employee_interaction = db.get_employee_interact_graph(team)
 
-    with st.spinner(f"Retrieving {project_choice}'s Task Depenence"):
-        task_dependence = db.get_task_dependence_graph(team_tasks)
+    task_dependence = None
+    if team != "*":
+        with st.spinner(f"Retrieving {project_choice}'s Task Depenence"):
+            task_dependence = db.get_task_dependence_graph(team_tasks)
     
     # Set data
     st.session_state.all_project_data[project_choice] = {
@@ -159,6 +165,11 @@ if not is_ready:
     st.stop()
 
 def render_graph(project_choice, graph_choice, graph_view):
+    # Do not support tasks-related graph for Company Overview
+    st.markdown(f"### {graph_choice} Network")
+    if project_choice == list(PROJECT_TO_TEAM_MAP.keys())[-1] and graph_choice != GRAPH_LIST[0]:
+        st.warning(f"{graph_choice} visualization not support for {project_choice} yet", icon="⚠")
+        return
     # Prepare graph and its render function
     graph_data = cur_project_data[graph_choice]
     graph = graph_data["graph"]
@@ -166,7 +177,6 @@ def render_graph(project_choice, graph_choice, graph_view):
 
 
     # Start rendering
-    st.markdown(f"### {graph_choice} Network")
     with st.spinner(f"Rendering {graph_choice} graph..."):
         # Prepare the elements and styles to render
         elements, node_styles, edge_styles = render_function(graph)

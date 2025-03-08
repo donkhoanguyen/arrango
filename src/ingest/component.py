@@ -55,8 +55,11 @@ def task_tile(task):
         f"""
         <div style="background-color: #f5f5f5; padding: 20px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
         ">
-            <p style="margin: 0; font-size: 20px; font-weight: bold;">
+            <p style="margin: 0; font-size: 24px; font-weight: bold;">
                 {task.get("Description", "Unknown")}
+            </p>
+            <p style="margin: 0; font-size: 20px; font-weight: bold;">
+                [{task.get("Project", "Unknown")}]
             </p>
             <div style="background-color: {status_color};
                 color: white;

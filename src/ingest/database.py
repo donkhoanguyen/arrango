@@ -18,6 +18,14 @@ TASK_STATUS_LABEL_MAP = {
     "Blocked": "BlockedTask"
 }
 
+TASKS_TO_PROJECT_MAP = {
+    "bi_tasks": "StreamSync Pipeline",
+    "de_tasks": "DataForge ETL",
+    "ds_tasks": "AetherFlow Orchestrator",
+    "dg_tasks": "NeoGraph Linker",
+    "*": "Company Overview"
+}
+
 # Function to get all employee information as a dictionary with EmpID as the key
 def get_all_employees_by_team(team_name):
     # Access the employee vertex collection
@@ -62,10 +70,17 @@ def get_all_employees_by_team(team_name):
 
 # Function to get all task information as a dictionary with as TaskID the key
 def get_all_tasks(tasks_col):
-    task_collection = db.collection(tasks_col)  # Ensure this is the correct collection name
-    
-    # Fetch all employees from the collection
-    tasks = task_collection.all()  # Fetches all documents in the collection
+    if tasks_col == "*":
+        collections = db.aql.execute("FOR c IN COLLECTIONS() FILTER c.name LIKE '%_tasks' RETURN c.name")
+        # Retrieve and flatten documents into one list
+        tasks = [
+            {**doc, "_collection": collection}  # Add collection name as metadata if needed
+            for collection in collections
+            for doc in db.collection(collection).all()
+        ]
+    else:
+        task_collection = db.collection(tasks_col)  # Ensure this is the correct collection name
+        tasks = task_collection.all()  # Fetches all documents in the collection
     
     # Create a dictionary to store employee info with EmpID as the key
     task_dict = {}
@@ -82,8 +97,8 @@ def get_all_tasks(tasks_col):
             "StartTime": task.get("StartTime"),
             "EstimatedFinishTime": task.get("EstimatedFinishTime"),
             "Status": task.get("Status"),
-            # "Status": random.choice(list(TASK_STATUS_LABEL_MAP.keys())),
-            "ActualFinishTime": task.get("ActualFinishTime")
+            "ActualFinishTime": task.get("ActualFinishTime"),
+            "Project": TASKS_TO_PROJECT_MAP[tasks_col if tasks_col != "*" else task["_collection"]]
         }
         task_dict[f"task/{task['_key']}"] = task_info
     

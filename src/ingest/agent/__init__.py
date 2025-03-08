@@ -68,6 +68,34 @@ def tool_node(state: AgentState):
             state["messages"] = outputs
             state["chosen_graph_name"] = graph_name
             return state
+        elif tool_name == "graph_visualize":
+            graph_wrapper = state["graph_cache"].get(state["chosen_graph_name"], None)
+            if not graph_wrapper:
+                outputs.append(
+                    ToolMessage(
+                        content = "You have not chosen a graph yet!",
+                        name=tool_call["name"],
+                        tool_call_id=tool_call["id"],
+                    )
+                )
+            else:
+                graph_viz_request = graph_visualize.invoke(input={
+                    "graph_wrapper": graph_wrapper,
+                    "query": state["original_query"],
+                    "context": state["original_context"]
+                })
+                
+                state["visualize_request"] = graph_viz_request
+                outputs.append(
+                    ToolMessage(
+                        content = "Visualization request processed!",
+                        name=tool_call["name"],
+                        tool_call_id=tool_call["id"],
+                    )
+                )
+                
+            state["messages"] = outputs
+            return state
         else:
             tool_result = tools_by_name[tool_name].invoke(tool_call["args"])
             outputs.append(

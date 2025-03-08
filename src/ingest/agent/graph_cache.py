@@ -1,5 +1,4 @@
 import json
-import os
 import streamlit as st
 from typing import Any
 from langchain_openai import ChatOpenAI
@@ -74,6 +73,18 @@ class GraphWrapper:
             return
         
         self.graph = nxadb.DiGraph(name=self.name, db=self.db)
+    
+    def get_full_schema(self):
+        full_schema = {"nodes": {}, "edges": {}}
+        
+        for node in self.schema["nodes"]:
+            full_schema["nodes"][node] = NODE_SCHEMA[node]
+        
+        for edge in self.schema["edges"]:
+            full_schema["edges"][edge] = NODE_SCHEMA[edge]
+
+        return full_schema
+
 
 choose_graph_template = env.get_template("choose_graph_prompt.jinja")
 @tool

@@ -8,6 +8,7 @@ import tempfile
 import os
 import database as db
 import graph as graph_utils
+from database import db as adb
 from agent.graph_cache import GraphWrapper
 
 from component import *
@@ -48,9 +49,9 @@ project_choice = st.session_state.project_choice
 
 # Load graph cache for Agents
 if "GRAPH_CACHE" not in st.session_state:
-    st.session_state.GRAPH_CACHE = {}
+    GRAPH_CACHE = {}
 
-    # Preload name, schema, and description 
+    # Preload name, schema, and description for task dependence graph
     for project in PROJECT_TO_TASKS_MAP:
         tasks_col = PROJECT_TO_TASKS_MAP[project]
 
@@ -65,9 +66,63 @@ if "GRAPH_CACHE" not in st.session_state:
                     "Status": "<'Planned'|'In Progress'|'Blocked'|'Completed'> the status of this task",
                 }
             },
-            "edges"
+            "edges": {
+                "depends on": {
+                    "_from": "<task _id>",
+                    "_to": "<task _id>",
+                    "description": "The _from task depends on the 'Completed' Status of all its _to neighbor to get started"
+                }
+            }
         }
+        description = f"This is the graph of task dependence for the project {project}"
+        
+        GRAPH_CACHE[tasks_dependence_graph_name] = GraphWrapper(adb, None, tasks_dependence_graph_name,schema, description)
 
+    # Preload employee interaction graph
+    schema = {
+        "node": {
+            "employee": {
+                "_id": "employee/<_key>",
+                "_key": "<int> The ID of the employee in this company",
+                "FirstName": "<string> The first name of this employee",
+                "LastName": "<string> The last name of this employee",
+                "Email": "<email> The email of this employee",
+                "Role": "<string> The role or job title of this employee",
+                "Department": "<string> The department in which the employee works",
+                "Team": "<string> The specific team within the department",
+                "Seniority": "<string> The seniority level of this employee",
+                "HireDate": "<date> The date this employee was hired in YYYY-MM-DD format"
+            }
+        },
+        "edges": {
+            "interacts with": {
+                "_from": "employee's <_id>",
+                "_to": "employee's <_id>",
+                "description": "The _to employee has had extended help with _from employee to make the _from employee achieve some tasks"
+            }
+        }
+    }
+    description = "The graph of extended interaction and help between employees of the company"
+    GRAPH_CACHE["employee_interaction"] = GraphWrapper(adb, None, "employee_interaction", schema, description)
+    
+    # Preload task assignment graph
+    schema = {
+        "nodes": ["task", "employee"],
+        "edges": {
+            "assigned to": {
+                "_from": "employee's <_id>",
+                "_to": "task's <_id>",
+                "relationship": "assigned",
+                "description": "The employee assigned to a task will be the one who is expected to COMPLETE and DELIVER it. Here, mostly junior and midlevels are assigned"
+            },
+            "advised": {
+                "_from": "employee's <_id>",
+                "_to": "task's <_id>",
+                "relationship": "advised",
+                "description": "The employee advised a task will be the one who is expected to QUALITY CONTROL and MAKE SURE the assigned meets expectation. Here, mostly seniors and lead are advising a task"
+            }
+        }
+    }
 
 GRAPH_CACHE: dict[str, GraphWrapper] = st.session_state.GRAPH_CACHE
 

@@ -14,11 +14,20 @@ from st_link_analysis import st_link_analysis
 
 PROJECT_TO_TEAM_MAP = {
     "StreamSync Pipeline": "Business Intelligence",
-    "DataForge ETL": "",
-    "AetherFlow Orchestrator": "",
-    "NeoGraph Linker": "",
+    "DataForge ETL": "Data Engineering",
+    "AetherFlow Orchestrator": "Data Science",
+    "NeoGraph Linker": "Data Governance",
     "Company Overview": "*"
 }
+PROJECT_TO_TASKS_MAP = {
+    "StreamSync Pipeline": "bi_tasks",
+    "DataForge ETL": "de_tasks",
+    "AetherFlow Orchestrator": "ds_tasks",
+    "NeoGraph Linker": "dg_tasks",
+    "Company Overview": "*"
+}
+
+GRAPH_TYPE = ["Employee Interaction", "Task Dependence", "Task Assignment"]
 
 VIEW_BY_GRAPH_CHOICE = {
     "Employee Interaction": ["Default (by hierarchy)", "Grid", "✨ Magic View"],
@@ -39,16 +48,35 @@ project_choice = st.session_state.project_choice
 if "all_project_data" not in st.session_state:
     st.session_state.all_project_data = {}
 
-if st.session_state.project_choice not in st.session_state.all_project_data:
-    print("reloading again)")
-    with st.spinner(f"Retrieving {project_choice}'s Task Assignment"):
-        task_assignment = db.get_bi_team_task_assignment()
+if project_choice not in st.session_state.all_project_data:
+    team = PROJECT_TO_TEAM_MAP[project_choice]
+    team_tasks = PROJECT_TO_TASKS_MAP[project_choice]
+
+    # Retrieve collections
+    emp_col = None
+    with st.spinner(f"Retrieving {project_choice}'s List of Employees"):
+        emp_col = db.get_all_employees_by_team(team)
+
+    tasks_col = None
+    with st.spinner(f"Retrieving {project_choice}'s List of Tasks"):
+        tasks_col = db.get_all_tasks(team_tasks)
+
+    # Retrieve graphs
+    task_assignment = None
+    if team != "*":
+        with st.spinner(f"Retrieving {project_choice}'s Task Assignment"):
+            task_assignment = db.get_task_assignment(team_tasks)
+        
+    employee_interaction = None
     with st.spinner(f"Retrieving {project_choice}'s Employee Interaction"):
-        employee_interaction = db.get_employee_interact_graph()
-    with st.spinner(f"Retriving {project_choice}'s Task Depenence"):
-        task_dependence = db.get_task_dependence_graph()
+        employee_interaction = db.get_employee_interact_graph(team)
 
-
+    task_dependence = None
+    if team != "*":
+        with st.spinner(f"Retrieving {project_choice}'s Task Depenence"):
+            task_dependence = db.get_task_dependence_graph(team_tasks)
+    
+    # Set data
     st.session_state.all_project_data[project_choice] = {
         "Task Assignment": {
             "graph": task_assignment,
@@ -62,11 +90,14 @@ if st.session_state.project_choice not in st.session_state.all_project_data:
             "graph": task_dependence,
             "render": db.retrieve_task_dependence_graph,
         },
-        "collection/Tasks": db.get_all_tasks(),
-        "collection/Employees": db.get_all_employees_by_team(PROJECT_TO_TEAM_MAP[project_choice])
+        "collection/Tasks": tasks_col,
+        "collection/Employees": emp_col,
     }
 
+# Retrieving data
 cur_project_data = st.session_state.all_project_data[project_choice]
+emp_info_dict = cur_project_data["collection/Employees"]
+task_info_dict = cur_project_data["collection/Tasks"]
 
 if "documents_text" not in st.session_state:
     st.session_state.documents_text = []
@@ -115,6 +146,11 @@ st.markdown(f"<h2 style='text-align: center;'>Project Overview Dashboard</h1>", 
 
 project_choice = st.selectbox("Current project:", PROJECT_LIST)
 
+if project_choice != st.session_state.project_choice:
+    st.session_state.project_choice = project_choice
+    st.rerun()
+
+
 is_ready = True
 
 # if not os.environ["OPENAI_API_KEY"] .startswith("sk-"):
@@ -129,6 +165,11 @@ if not is_ready:
     st.stop()
 
 def render_graph(project_choice, graph_choice, graph_view):
+    # Do not support tasks-related graph for Company Overview
+    st.markdown(f"### {graph_choice} Network")
+    if project_choice == list(PROJECT_TO_TEAM_MAP.keys())[-1] and graph_choice != GRAPH_LIST[0]:
+        st.warning(f"{graph_choice} visualization not support for {project_choice} yet", icon="⚠")
+        return
     # Prepare graph and its render function
     graph_data = cur_project_data[graph_choice]
     graph = graph_data["graph"]
@@ -136,7 +177,6 @@ def render_graph(project_choice, graph_choice, graph_view):
 
 
     # Start rendering
-    st.markdown(f"### {graph_choice} Network")
     with st.spinner(f"Rendering {graph_choice} graph..."):
         # Prepare the elements and styles to render
         elements, node_styles, edge_styles = render_function(graph)
@@ -184,13 +224,14 @@ def render_graph(project_choice, graph_choice, graph_view):
 graph_choose_col, graph_view_col = st.columns(2)
 
 with graph_choose_col:
-    main_graph_choice = st.selectbox("Choose a graph to view", ["Employee Interaction", "Task Dependence", "Task Assignment"])
+    main_graph_choice = st.selectbox("Choose a graph to view", GRAPH_TYPE, index=GRAPH_TYPE.index(main_graph_choice))
     st.session_state.main_graph_choice = main_graph_choice
 
 with graph_view_col:
     view_choices = VIEW_BY_GRAPH_CHOICE[main_graph_choice]
     main_graph_view = st.selectbox("Choose how you want to view", view_choices)
     st.session_state.main_graph_view = main_graph_view
+print("Current choice", main_graph_choice)
 
 render_graph(project_choice, main_graph_choice, main_graph_view)
 
@@ -200,8 +241,6 @@ st.markdown("### Overview")
 # Create a three-column layout
 col1, col2, col3 = st.columns(3)
 
-emp_info_dict = cur_project_data["collection/Employees"]
-task_info_dict = cur_project_data["collection/Tasks"]
 # First column: Summary tile + Information
 with col1:
     st.selectbox("employee_stat", ["Current Employees", "Active Employees"], label_visibility="collapsed")

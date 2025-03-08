@@ -60,7 +60,7 @@ def tool_node(state: AgentState):
             )
             outputs.append(
                 ToolMessage(
-                    content=f"Graph {graph_name} has been chosen with reason '{reason}'",
+                    content=f"Graph '{graph_name}' has been chosen with reason '{reason}'",
                     name=tool_call["name"],
                     tool_call_id=tool_call["id"],
                 )
@@ -77,6 +77,7 @@ def tool_node(state: AgentState):
                     tool_call_id=tool_call["id"],
                 )
             )
+            print(tool_call["id"])
             state["messages"] = outputs
             return state
 

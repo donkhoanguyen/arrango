@@ -284,18 +284,14 @@ class ChatInstance:
     def process_stream(self, stream):
         for chunk in stream:
             message = chunk[0]
-            print(message)
             if isinstance(message, ToolMessage):
                 with st.expander(f"Used tool [{message.name}]"):
                     st.markdown("Tool Response:")
                     st.markdown(f"```\n{message.content}\n```")
-                    self.append_message({"role": "tool", "name": message.name, "content": message.content})
+                    # self.append_message({"role": "tool", "name": message.name, "content": message.content})
                 yield ""
             
             if isinstance(message, AIMessageChunk):
-                if "tool_calls" in message.additional_kwargs:
-                    yield ""
-                else:
                     yield message.content
 
     def render(self):
@@ -319,7 +315,6 @@ class ChatInstance:
 
             # Start accepting chat
         st.chat_input("What do you want to do today?", key=f"{self.chatbot_id}/prev_user_msg", on_submit=self._callback_append_user_msg)
-
     def get_response_stream(self):
         messages = self.get_messages()
         stream = self.agent.stream(

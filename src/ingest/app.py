@@ -8,6 +8,7 @@ import tempfile
 import os
 import database as db
 import graph as graph_utils
+from agent.graph_cache import GraphWrapper
 
 from component import *
 from st_link_analysis import st_link_analysis
@@ -40,14 +41,41 @@ PROJECT_LIST = ["StreamSync Pipeline", "DataForge ETL", "AetherFlow Orchestrator
 GRAPH_LIST = ["Employee Interaction", "Task Dependence", "Task Assignment"]
 
 # --- Initialize session state ---
+# Load project choice
 if "project_choice" not in st.session_state:
     st.session_state.project_choice = PROJECT_LIST[0]
-
 project_choice = st.session_state.project_choice
 
+# Load graph cache for Agents
+if "GRAPH_CACHE" not in st.session_state:
+    st.session_state.GRAPH_CACHE = {}
+
+    # Preload name, schema, and description 
+    for project in PROJECT_TO_TASKS_MAP:
+        tasks_col = PROJECT_TO_TASKS_MAP[project]
+
+        tasks_dependence_graph_name = f"{tasks_col}_dependence_graph"
+        schema = {
+            "node": {
+                "task": {
+                    "_id": f"{tasks_col}/<TaskID>",
+                    "TaskID": "<string> the ID of this task",
+                    "Description": "<string> short description of this task",
+                    "StoryPoints": "<int> The count of this story points",
+                    "Status": "<'Planned'|'In Progress'|'Blocked'|'Completed'> the status of this task",
+                }
+            },
+            "edges"
+        }
+
+
+GRAPH_CACHE: dict[str, GraphWrapper] = st.session_state.GRAPH_CACHE
+
+# Load entire project data
 if "all_project_data" not in st.session_state:
     st.session_state.all_project_data = {}
 
+# Preload all graphs related to this project
 if project_choice not in st.session_state.all_project_data:
     team = PROJECT_TO_TEAM_MAP[project_choice]
     team_tasks = PROJECT_TO_TASKS_MAP[project_choice]
@@ -93,6 +121,14 @@ if project_choice not in st.session_state.all_project_data:
         "collection/Tasks": tasks_col,
         "collection/Employees": emp_col,
     }
+
+    # Update graph data in the graph cache
+    
+
+    task_assignment_wrapper: GraphWrapper = GraphWrapper(
+        task_assignment,
+        tasks_col 
+    )
 
 # Retrieving data
 cur_project_data = st.session_state.all_project_data[project_choice]

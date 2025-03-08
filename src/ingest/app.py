@@ -50,22 +50,25 @@ if "all_project_data" not in st.session_state:
     st.session_state.all_project_data = {}
 
 if project_choice not in st.session_state.all_project_data:
+    team = PROJECT_TO_TEAM_MAP[project_choice]
+    team_tasks = PROJECT_TO_TASKS_MAP[project_choice]
+
     # Retrieve collections
     with st.spinner(f"Retrieving {project_choice}'s List of Employees"):
-        emp_col = db.get_all_employees_by_team(PROJECT_TO_TEAM_MAP[project_choice])
+        emp_col = db.get_all_employees_by_team(team)
         
     with st.spinner(f"Retrieving {project_choice}'s List of Tasks"):
-        tasks_col = db.get_all_tasks(PROJECT_TO_TASKS_MAP[project_choice])
+        tasks_col = db.get_all_tasks(team_tasks)
 
     # Retrieve graphs
     with st.spinner(f"Retrieving {project_choice}'s Task Assignment"):
-        task_assignment = db.get_bi_team_task_assignment()
+        task_assignment = db.get_task_assignment(team_tasks)
         
     with st.spinner(f"Retrieving {project_choice}'s Employee Interaction"):
-        employee_interaction = db.get_employee_interact_graph()
+        employee_interaction = db.get_employee_interact_graph(team)
 
     with st.spinner(f"Retrieving {project_choice}'s Task Depenence"):
-        task_dependence = db.get_task_dependence_graph(PROJECT_TO_TASKS_MAP[project_choice])
+        task_dependence = db.get_task_dependence_graph(team_tasks)
     
     # Set data
     st.session_state.all_project_data[project_choice] = {

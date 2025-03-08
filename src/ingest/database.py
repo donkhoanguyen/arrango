@@ -89,20 +89,26 @@ def get_all_tasks(tasks_col):
     
     return task_dict
 
-def get_employee_interact_graph():
-    return nxadb.Graph(name="employee_interaction")
+def get_employee_interact_graph(team):
+    full_graph = nxadb.Graph(name="employee_interaction")
+    if team == "*":
+        return full_graph
+    
+    filtered_nodes = {n for n, data in full_graph.nodes(data=True) if data["Team"] == team}
+    team_graph = full_graph.copy().subgraph(filtered_nodes)
+    return team_graph
 
 def get_task_dependence_graph(tasks_col):
     return nxadb.DiGraph(name=f"{tasks_col}_dependence_graph")
 
-def get_bi_team_task_assignment():
-    return nxadb.MultiDiGraph(name="bi_team_task_assignment")
+def get_task_assignment(tasks_col):
+    return nxadb.MultiDiGraph(name=f"bi_team_task_assignment")
+    # return nxadb.MultiDiGraph(name=f"{tasks_col}_task_assignment")
 
 
 def retrieve_employee_interaction_graph(emp_interact_graph):
     nodes = []
     edges = []
-    
     for employee_node, employee_info in emp_interact_graph.nodes(data=True):
         seniority = employee_info["Seniority"] 
 
@@ -125,7 +131,10 @@ def retrieve_employee_interaction_graph(emp_interact_graph):
         NodeStyle("Employee", "#9C27B0", "name", "person"),       # Purple
     ]
     for emp_from, emp_to in emp_interact_graph.edges:
-        if (emp_from == "employee/0" or emp_to == "employee/0"):
+        if (
+            emp_from == "employee/0"
+            or emp_to == "employee/0"
+        ):
             continue
         edges.append({
             "data": {

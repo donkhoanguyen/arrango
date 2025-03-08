@@ -11,6 +11,7 @@ os.environ["LANGSMITH_TRACING"] = st.secrets["LANGSMITH_TRACING"]
 os.environ["LANGSMITH_ENDPOINT"] = st.secrets["LANGSMITH_ENDPOINT"]
 os.environ["LANGSMITH_API_KEY"] = st.secrets["LANGSMITH_API_KEY"]
 os.environ["LANGSMITH_PROJECT"] = st.secrets["LANGSMITH_PROJECT"]
+os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
 
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import ToolMessage
@@ -258,6 +259,7 @@ class ChatInstance:
         if "GRAPH_CACHE" not in st.session_state:
             raise ValueError("Graph cache is not loaded yet, cannot start chatbot")
 
+        self.GRAPH_CACHE = st.session_state.GRAPH_CACHE
         if chatbot_id not in st.session_state:
             st.session_state[chatbot_id] = [
                 {
@@ -315,9 +317,14 @@ class ChatInstance:
         st.chat_input("What do you want to do today?", key=f"{self.chatbot_id}/prev_user_msg", on_submit=self._callback_append_user_msg)
 
     def get_response_stream(self):
+        messages = self.get_messages()
         stream = self.agent.stream(
             {
                 "messages": self.get_messages(),
+                "graph_cache": self.GRAPH_CACHE,
+                "chosen_graph_name": None,
+                "original_query": messages[-1]["content"],
+                "original_context": self.context
             },
             stream_mode="messages"
         )

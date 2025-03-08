@@ -21,6 +21,7 @@ PROJECT_TO_TEAM_MAP = {
     "NeoGraph Linker": "Data Governance",
     "Company Overview": "*"
 }
+
 PROJECT_TO_TASKS_MAP = {
     "StreamSync Pipeline": "bi_tasks",
     "DataForge ETL": "de_tasks",
@@ -55,6 +56,8 @@ if "GRAPH_CACHE" not in st.session_state:
     for project in PROJECT_TO_TASKS_MAP:
         tasks_col = PROJECT_TO_TASKS_MAP[project]
 
+        if tasks_col == "*":
+            continue
         tasks_dependence_graph_name = f"{tasks_col}_dependence_graph"
         schema = {
             "node": ["task"],
@@ -119,7 +122,7 @@ if project_choice not in st.session_state.all_project_data:
     if team != "*":
         with st.spinner(f"Retrieving {project_choice}'s Task Depenence"):
             task_dependence = db.get_task_dependence_graph(team_tasks)
-            GRAPH_CACHE[f"{team_tasks}_dependence_graph"]
+            GRAPH_CACHE[f"{team_tasks}_dependence_graph"].graph = task_dependence
     
     # Set data
     st.session_state.all_project_data[project_choice] = {
@@ -263,8 +266,8 @@ def render_graph(project_choice, graph_choice, graph_view):
         
         # Finally, render it out to frontend
         st_link_analysis(elements, layout_options, node_styles, edge_styles)
-
-        accordion_graph_chatbot(graph, f"{project_choice}/magic_ask/{graph_choice}")
+        print(f"Current chatbot for {graph.name}")
+        accordion_graph_chatbot(GRAPH_CACHE[graph.name], f"{project_choice}/magic_ask/{graph_choice}")
 
 
 graph_choose_col, graph_view_col = st.columns(2)

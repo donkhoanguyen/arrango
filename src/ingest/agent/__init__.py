@@ -1,4 +1,6 @@
-from typing import Annotated, Sequence
+import os
+import streamlit as st
+from typing import Annotated, Sequence, TypedDict
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import BaseMessage, ToolMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
@@ -12,15 +14,14 @@ env = Environment(loader=FileSystemLoader("./agent/prompt"))
 from agent.graph_cache import GraphWrapper, choose_graph
 from agent.utils import get_weather
 
-
 # Set up tools
 tools = [get_weather, choose_graph]
 tools_by_name = {tool.name: tool for tool in tools}
 
 # Set up OpenAI model
-model = ChatOpenAI(model="gpt-4o", temperature=0.7)
+model = ChatOpenAI(model="gpt-4o", temperature=0.7, api_key=st.secrets["OPENAI_API_KEY"])
 model  = model.bind_tools(tools)
-class AgentState:
+class AgentState(TypedDict):
     # List of messages so far
     messages: Annotated[Sequence[BaseMessage], add_messages]
 
@@ -43,11 +44,20 @@ class AgentState:
 def tool_node(state: AgentState):
     """logic here"""
     outputs = []
-    for tool_call in state.messages[-1].tool_calls:
+    for tool_call in state["messages"][-1].tool_calls:
+        print("Current state in tool :", state)
         # print("TOOL CALL", tool_call)
         tool_name = tool_call["name"]
+        print("calling tool", tool_name)
+        print("args:", tool_call["args"])
         if tool_name == "choose_graph":
-            graph_name, reason = choose_graph.invoke(state.graph_cache, state.original_query, state.original_context)
+            graph_name, reason = choose_graph.invoke(
+                input= {
+                    "graph_cache": state["graph_cache"],
+                    "query": state["original_query"],
+                    "context": state["original_context"],
+                }
+            )
             outputs.append(
                 ToolMessage(
                     content=f"Graph {graph_name} has been chosen with reason '{reason}'",
@@ -55,8 +65,8 @@ def tool_node(state: AgentState):
                     tool_call_id=tool_call["id"],
                 )
             )
-            state.messages = outputs
-            state.chosen_graph_name = graph_name
+            state["messages"] = outputs
+            state["chosen_graph_name"] = graph_name
             return state
         else:
             tool_result = tools_by_name[tool_name].invoke(tool_call["args"])
@@ -67,7 +77,7 @@ def tool_node(state: AgentState):
                     tool_call_id=tool_call["id"],
                 )
             )
-            state.messages = outputs
+            state["messages"] = outputs
             return state
 
 # Define the node that calls the model
@@ -87,16 +97,16 @@ def call_model(
         "
     )
     # Get response
-    response = model.invoke([system_prompt] + state.messags, config)
+    response = model.invoke([system_prompt] + state["messages"], config)
     
     # Persist state
-    state.messages = [response]
+    state["messages"] = [response]
     return state
 
 
 # Define the conditional edge that determines whether to continue or not
 def should_continue(state: AgentState):
-    messages = state.messages
+    messages = state["messages"]
     last_message = messages[-1]
     # If there is no function call, then we finish
     if not last_message.tool_calls:

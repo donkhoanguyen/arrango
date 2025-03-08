@@ -1,12 +1,14 @@
 import json
-from typing import Any, Dict
+import os
+import streamlit as st
+from typing import Any
 from langchain_openai import ChatOpenAI
 import nx_arangodb as nxadb
 
-from pydantic import BaseModel, BeforeValidator, field_serializer
 from langchain_core.tools import tool
 from arango.database import StandardDatabase
 from agent import env
+
 
 NODE_SCHEMA = {
     "employee": {
@@ -90,7 +92,8 @@ def choose_graph(graph_cache: dict[str, Any], query: str, context: str):
         The name of the graph to query from and a brief reason why we chose this one.
     """
     # Initialize llm
-    llm = ChatOpenAI(temperature=0.7, model_name="gpt-4o")
+    llm = ChatOpenAI(temperature=0.7, model_name="gpt-4o", api_key=st.secrets["OPENAI_API_KEY"])
+    llm = llm.bind(response_format={"type": "json_object"})
     
     graph_list = [str(graph_cache[graph_name]) for graph_name in graph_cache] 
       
@@ -103,8 +106,7 @@ def choose_graph(graph_cache: dict[str, Any], query: str, context: str):
     })
     
     response = llm.invoke(prompt)
-    
-    response_json = json.loads(response)
+    response_json = json.loads(response.content)
     
     return response_json["name"], response_json["reason"] 
     

@@ -2,6 +2,7 @@ import streamlit as st
 import streamlit_nested_layout
 
 from chatbot import ChatInstance
+from agent.graph_cache import GraphWrapper
 
 def summary_tile(title, number, description, color):
     st.markdown(
@@ -209,7 +210,7 @@ def task_modal(task):
     st.markdown("### Notes")
     st.markdown("Add any relevant details or comments about this task.")
 
-def accordion_graph_chatbot(G, chatbot_id):
+def accordion_graph_chatbot(graph_wrapper: GraphWrapper, chatbot_id):
     with st.expander("✨ Ask about this graph!"):
-        chatbot = ChatInstance(chatbot_id, "This is question about a graph")
+        chatbot = ChatInstance(chatbot_id, f"The user might want to know more about things related to this following graph {graph_wrapper}")
         chatbot.render()

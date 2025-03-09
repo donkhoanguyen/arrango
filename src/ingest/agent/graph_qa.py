@@ -110,15 +110,28 @@ def extract_subgraph(
 # Reference: https://python.langchain.com/api_reference/community/chains/langchain_community.chains.graph_qa.arangodb.ArangoGraphQAChain.html
 # Note: It is encouraged to experiment and improve this section! This is just a placeholder:
 
+text_to_aql_answer_template = env.get_template("text_to_aql_answer_prompt.jinja")
 @tool
-def text_to_aql_to_text(graph_wrapper, query: str, ):
-    """This tool is available to invoke the
-    ArangoGraphQAChain object, which enables you to
-    translate a Natural Language Query into AQL, execute
-    the query, and translate the result back into Natural Language.
+def text_to_aql_to_text(
+        query: str,
+        context: str,
+        other_instruction: str
+    ):
+    """
+    This tool processes a natural language query on an ArangoDB graph using the ArangoGraphQAChain.
+
+    The tool translates the query into AQL, executes it, and converts the result back into natural language.
+
+    Args:
+        query: The original query from the user.
+        context: The context for why the user asked this query.
+        other_instruction: Additional instructions derived from tool interactions or message history.
+
+    Returns:
+        A natural language response that answers the original query based on the executed AQL result.
     """
 
-    llm = ChatOpenAI(temperature=0, model_name="gpt-4o")
+    llm = ChatOpenAI(temperature=0, model_name="gpt-4o", api_key=st.secrets["OPENAI_API_KEY"])
 
     chain = ArangoGraphQAChain.from_llm(
     	llm=llm,
@@ -127,52 +140,60 @@ def text_to_aql_to_text(graph_wrapper, query: str, ):
         allow_dangerous_requests=True
     )
     
-    result = chain.invoke(query)
+    answer_prompt = text_to_aql_answer_template.render({
+        "query": query,
+        "context": context,
+        "other_instruction": other_instruction,
+    })
+    result = chain.invoke(answer_prompt)
 
     return str(result["result"])
 
 
 # 5. Define the Text to NetworkX/cuGraph Tool
 # Note: It is encouraged to experiment and improve this section! This is just a placeholder:
-
+text_to_nx_code_template = env.get_template("text_to_nx_code_prompt.jinja")
+text_to_nx_answer_template = env.get_template("text_to_nx_answer_prompt.jinja")
 @tool
-def text_to_nx_algorithm_to_text(query):
-    """This tool is available to invoke a NetworkX Algorithm on
-    the ArangoDB Graph. You are responsible for accepting the
-    Natural Language Query, establishing which algorithm needs to
-    be executed, executing the algorithm, and translating the results back
-    to Natural Language, with respect to the original query.
+def text_to_nx_algorithm_to_text(
+        graph_wrapper: Any,
+        query: str,
+        context: str,
+        other_instruction: str,
+    ):
+    """
+    This tool invokes a NetworkX algorithm on an ArangoDB graph based on a natural language query.
 
-    If the query (e.g traversals, shortest path, etc.) can be solved using the Arango Query Language, then do not use
-    this tool.
+    You have to make sure you already CHOSE a graph before calling this tool. You should use this tool in conjunction with other tools, because this only extract subgraphs, not answer questions about it.
+
+    The tool determines the appropriate NetworkX algorithm, executes it, and translates the results back into natural language. 
+    If the query can be efficiently solved using Arango Query Language (AQL), this tool should not be used.
+
+    Args:
+        graph_wrapper: A wrapper containing the graph, its schema, and its description.
+        query: The original natural language query from the user.
+        context: The broader context for why the query was made.
+        other_instruction: Additional instructions derived from tool interactions or message history.
+
+    Returns:
+        A response in natural language summarizing the algorithm's output, formatted to align with the original query.
     """
 
-    llm = ChatOpenAI(temperature=0, model_name="gpt-4o")
+    llm = ChatOpenAI(temperature=0.7, model_name="gpt-4o", api_key=st.secrets["OPENAI_API_KEY"])
 
     ######################
     print("1) Generating NetworkX code")
 
-    text_to_nx = llm.invoke(f"""
-    I have a NetworkX Graph called `G_adb`. It has the following schema: {arango_graph.schema}
+    code_prompt = text_to_nx_code_template.render({
+        "full_schema": graph_wrapper.get_full_schema(),
+        "query": query,
+        "context": context,
+        "other_instruction": other_instruction
+    })
 
-    I have the following graph analysis query: {query}.
+    text_to_nx = llm.invoke(code_prompt).content
 
-    Generate the Python Code required to answer the query using the `G_adb` object.
-
-    Be very precise on the NetworkX algorithm you select to answer this query. Think step by step.
-
-    Only assume that networkx is installed, and other base python dependencies.
-
-    Always set the last variable as `FINAL_RESULT`, which represents the answer to the original query.
-
-    Only provide python code that I can directly execute via `exec()`. Do not provide any instructions.
-
-    Make sure that `FINAL_RESULT` stores a short & consice answer. Avoid setting this variable to a long sequence.
-
-    Your code:
-    """).content
-
-    text_to_nx_cleaned = re.sub(r"^```python\n|```$", "", text_to_nx, flags=re.MULTILINE).strip()
+    text_to_nx_cleaned = re.sub(r"^```(python|python3)\n|```$", "", text_to_nx, flags=re.MULTILINE).strip()
     
     print('-'*10)
     print(text_to_nx_cleaned)
@@ -181,22 +202,21 @@ def text_to_nx_algorithm_to_text(query):
     ######################
 
     print("\n2) Executing NetworkX code")
-    global_vars = {"G_adb": G_adb, "nx": nx}
+    global_vars = {"G": graph_wrapper.graph, "nx": nx}
     local_vars = {}
 
-    try:
-        exec(text_to_nx_cleaned, global_vars, local_vars)
-        text_to_nx_final = text_to_nx
-    except Exception as e:
-        print(f"EXEC ERROR: {e}")
-        return f"EXEC ERROR: {e}"
-
-        # TODO: Consider experimenting with a code corrector!
-        attempt = 1
-        MAX_ATTEMPTS = 3
-
-        # while attempt <= MAX_ATTEMPTS
-            # ...
+    MAX_ATTEMPTS = 3
+    attempt = 1
+    while attempt <= MAX_ATTEMPTS:
+        print(f"Attempt #{attempt}: Running for effect...")
+        try:
+            exec(text_to_nx_cleaned, global_vars, local_vars)
+            break
+        except Exception as e:
+            print(f"EXEC ERROR: {e}")
+            if attempt == MAX_ATTEMPTS:
+                return None, "Error: unable to run NetworkX to analyze graph, cannot answer query about graph"
+            attempt += 1
 
     print('-'*10)
     FINAL_RESULT = local_vars["FINAL_RESULT"]
@@ -207,23 +227,14 @@ def text_to_nx_algorithm_to_text(query):
 
     print("3) Formulating final answer")
 
-    nx_to_text = llm.invoke(f"""
-        I have a NetworkX Graph called `G_adb`. It has the following schema: {arango_graph.schema}
+    answer_prompt = text_to_nx_answer_template.render({
+        "full_schema": graph_wrapper.get_full_schema(),
+        "query": query,
+        "other_instruction":  other_instruction,
+        "executed_code": text_to_nx,
+        "FINAL_RESULT": FINAL_RESULT
+    })
 
-        I have the following graph analysis query: {query}.
-
-        I have executed the following python code to help me answer my query:
-
-        ---
-        {text_to_nx_final}
-        ---
-
-        The `FINAL_RESULT` variable is set to the following: {FINAL_RESULT}.
-
-        Based on my original Query and FINAL_RESULT, generate a short and concise response to
-        answer my query.
-        
-        Your response:
-    """).content
+    nx_to_text = llm.invoke(answer_prompt).content
 
     return nx_to_text

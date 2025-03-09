@@ -31,7 +31,12 @@ class GraphVisualizationRequest:
 
 graph_viz_template = env.get_template("visualize_graph_layout_prompt.jinja")
 @tool
-def visualize_graph(graph_wrapper: Any, query: str, context: str):
+def visualize_graph(
+        graph_wrapper: Any,
+        query: str,
+        context: str,
+        other_instruction: str,
+    ):
     """
     This tool is ONLY for visualizing a graph based on the user query.
 
@@ -47,7 +52,8 @@ def visualize_graph(graph_wrapper: Any, query: str, context: str):
         graph_wrapper: An instance of GraphWrapper containing the graph, its name, schema, and description
         query: The original query of the user
         context: The original context for this chatbot
-        
+        other_instruction: Additional instructions derived from tool interactions or message history.
+
     Returns:
         An instance of GraphVisualizationRequest, to be saved into state later
     """
@@ -98,7 +104,8 @@ def visualize_graph(graph_wrapper: Any, query: str, context: str):
     prompt = graph_viz_template.render({
         "query": query,
         "context": context,
-        "full_schema": graph_wrapper.get_full_schema()
+        "full_schema": graph_wrapper.get_full_schema(),
+        "other_instruction": other_instruction
     })
     response = llm.invoke(prompt)
     layout = response.content

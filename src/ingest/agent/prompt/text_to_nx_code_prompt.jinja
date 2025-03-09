@@ -1,0 +1,36 @@
+You are an expert in NetworkX and graph analysis. Your task is to generate precise Python code to answer a user’s graph query.
+
+### Graph Details
+- Graph Schema: {{full_schema}}
+
+### User Query Context
+- Query: {{query}}
+- Context: {{context}}
+- Other Instruction: {{other_instruction}}
+
+### Instructions
+You need to generate executable Python code that uses the given NetworkX graph object `G` (will be provided, do not initialize one). Follow these guidelines:
+
+- Carefully analyze the query and determine the most suitable NetworkX algorithm.
+- Consider the broader context and additional instructions to refine the approach.
+- Think step by step to select the best method for solving the query.
+- Ensure the result is stored in the variable `FINAL_RESULT`, which should contain a short and concise answer.
+- Avoid setting `FINAL_RESULT` to a long sequence or unnecessary details.
+- Assume only NetworkX and base Python dependencies are available.
+- The code must be fully executable via `exec()` without requiring additional modifications.
+
+### Output Format
+- Directly provide Python code without explanations or extra text.
+- The last variable should always be `FINAL_RESULT`, representing the answer to the query.
+
+### Example Code Structure
+```python
+# Select the appropriate NetworkX algorithm based on query, context, and instructions
+
+# Store the final answer
+FINAL_RESULT = <computed_value>
+```
+
+### Final Reminder
+- Do not include explanations, comments, or additional instructions—only provide raw executable Python code.
+- Ensure accuracy and efficiency in selecting and applying the algorithm.

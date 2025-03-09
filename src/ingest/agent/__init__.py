@@ -21,12 +21,23 @@ env = Environment(loader=FileSystemLoader("./agent/prompt"))
 from agent.graph_cache import GraphWrapper, choose_graph
 from agent.utils import get_weather
 from agent.graph_visualization import visualize_graph
-from agent.graph_qa import extract_subgraph
+from agent.graph_qa import extract_subgraph, text_to_aql_to_text, text_to_nx_algorithm_to_text
 from agent.cpm import create_cpm_table, ask_cpm_question
 from agent.hits import create_hits_table, ask_hits_question
 
 # Set up tools
-tools = [get_weather, choose_graph, visualize_graph, create_cpm_table, ask_cpm_question, create_hits_table, ask_hits_question, extract_subgraph]
+tools = [
+    get_weather,
+    choose_graph,
+    visualize_graph,
+    create_cpm_table,
+    ask_cpm_question,
+    create_hits_table,
+    ask_hits_question,
+    extract_subgraph,
+    text_to_aql_to_text,
+    text_to_nx_algorithm_to_text,
+]
 tools_by_name = {tool.name: tool for tool in tools}
 
 # Set up OpenAI model
@@ -73,6 +84,7 @@ def tool_node(state: AgentState):
                     "graph_cache": state["graph_cache"],
                     "query": state["original_query"],
                     "context": state["original_context"],
+                    "other_instruction": tool_call["args"]["other_instruction"]
                 }
             )
             outputs.append(
@@ -222,6 +234,51 @@ def tool_node(state: AgentState):
                         )
                     )
                     state["chosen_graph_name"] = subgraph_wrapper.name
+                
+            state["messages"] = outputs
+            return state
+        elif tool_name == "text_to_aql_to_text":
+            result = text_to_aql_to_text.invoke(input={
+                "query": state["original_query"],
+                "context": state["original_context"],
+                "other_instruction": tool_call["args"]["other_instruction"]
+            })
+            outputs.append(
+                ToolMessage(
+                    content=result,
+                    name=tool_call["name"],
+                    tool_call_id=tool_call["id"],
+                )
+            ) 
+            state["messages"] = outputs
+            return state
+        elif tool_name == "text_to_nx_algorithm_to_text":
+            graph_wrapper = state["graph_cache"].get(state["chosen_graph_name"], None)
+            
+            # No proceed if no graph chosen
+            if not graph_wrapper:
+                outputs.append(
+                    ToolMessage(
+                        content = "You have not chosen a graph yet, make sure to use choose_graph first!",
+                        name=tool_call["name"],
+                        tool_call_id=tool_call["id"],
+                    )
+                )
+            else:
+                # Start
+                result = text_to_nx_algorithm_to_text.invoke(input={
+                    "graph_wrapper": graph_wrapper,
+                    "query": state["original_query"],
+                    "context": state["original_context"],
+                    "other_instruction": tool_call["args"]["other_instruction"]
+                })
+                outputs.append(
+                    ToolMessage(
+                        content=result,
+                        name=tool_call["name"],
+                        tool_call_id=tool_call["id"],
+                    )
+                )
                 
             state["messages"] = outputs
             return state

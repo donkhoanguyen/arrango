@@ -15,8 +15,11 @@ from agent.graph_cache import GraphWrapper, choose_graph
 from agent.utils import get_weather
 from agent.graph_visualization import visualize_graph
 
+from agent.cpm import create_cpm_table, ask_cpm_question
+from agent.hits import create_hits_table, ask_hits_question
+
 # Set up tools
-tools = [get_weather, choose_graph, visualize_graph]
+tools = [get_weather, choose_graph, visualize_graph, create_cpm_table, ask_cpm_question, create_hits_table, ask_hits_question] 
 tools_by_name = {tool.name: tool for tool in tools}
 
 # Set up OpenAI model
@@ -69,6 +72,7 @@ def tool_node(state: AgentState):
             state["messages"] = outputs
             state["chosen_graph_name"] = graph_name
             return state
+        
         elif tool_name == "visualize_graph":
             graph_wrapper = state["graph_cache"].get(state["chosen_graph_name"], None)
             print("chosen graph name", state["chosen_graph_name"])
@@ -99,18 +103,70 @@ def tool_node(state: AgentState):
                 
             state["messages"] = outputs
             return state
-        else:
-            tool_result = tools_by_name[tool_name].invoke(tool_call["args"])
+        
+        elif tool_name == "create_cpm_table":
+            G_adb = state["G_adb"]
+            tool_result = tools_by_name[tool_call["name"]].invoke({"G_adb": G_adb})
             outputs.append(
                 ToolMessage(
-                    content = tool_result,
+                    content=tool_result,
                     name=tool_call["name"],
                     tool_call_id=tool_call["id"],
                 )
             )
-            print(tool_call["id"])
-            state["messages"] = outputs
+            state = {'df': tool_result, "messages": outputs}
             return state
+        
+        elif tool_name == "ask_cpm_question":
+            cpm_df = state["df"]
+            tool_result = tools_by_name[tool_call["name"]].invoke({"df": cpm_df, "question" :tool_call["args"]})
+            outputs.append(
+                ToolMessage(
+                    content=tool_result,
+                    name=tool_call["name"],
+                    tool_call_id=tool_call["id"],
+                )
+            )
+            state = {"messages": outputs}
+            return state
+        
+        elif tool_name == "create_hits_table":
+            G_adb = state["G_adb"]
+            tool_result = tools_by_name[tool_call["name"]].invoke({"G_adb": G_adb})
+            outputs.append(
+                ToolMessage(
+                    content=tool_result,
+                    name=tool_call["name"],
+                    tool_call_id=tool_call["id"],
+                )
+            )
+            state = {"df": tool_result, "messages": outputs}
+            return state
+        
+        elif tool_name == "ask_hits_question":
+            hits_df = state["df"]
+            tool_result = tools_by_name[tool_call["name"]].invoke({"df": hits_df, "question" :tool_call["args"]})
+            outputs.append(
+                ToolMessage(
+                    content=tool_result,
+                    name=tool_call["name"],
+                    tool_call_id=tool_call["id"],
+                )
+            )
+            state = {"messages": outputs}
+            return state
+        # else:
+        #     tool_result = tools_by_name[tool_name].invoke(tool_call["args"])
+        #     outputs.append(
+        #         ToolMessage(
+        #             content = tool_result,
+        #             name=tool_call["name"],
+        #             tool_call_id=tool_call["id"],
+        #         )
+        #     )
+        #     print(tool_call["id"])
+        #     state["messages"] = outputs
+        #     return state
 
 # Define the node that calls the model
 def call_model(

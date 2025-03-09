@@ -168,6 +168,7 @@ def tool_node(state: AgentState):
         #     state["messages"] = outputs
         #     return state
 
+agent_system_prompt_template = env.get_template("agent_system_prompt.jinja")
 # Define the node that calls the model
 def call_model(
         state: AgentState,
@@ -176,14 +177,12 @@ def call_model(
     print("cur chosen graph", state["chosen_graph_name"])
     """logic here"""
     # Get the question 
-    system_prompt = SystemMessage(
-        "You are a helpful AI assistant that will be querying in our graph databases. \
-        A typical workflow will include: \
-            - Going into the database to select the right graph \
-            - Perform the calculation / analysis required to generate desired output in either natural language or a dataframe \
-            - If necessary, further analyze the output dataframe to formulate answers to the user's question \
-        "
-    )
+    system_prompt = SystemMessage(agent_system_prompt_template.render({
+        "original_query": state["original_query"],
+        "original_context": state["original_context"],
+        "chosen_graph_name": state["chosen_graph_name"]
+    }))
+
     # Get response
     response = model.invoke([system_prompt] + state["messages"], config)
     

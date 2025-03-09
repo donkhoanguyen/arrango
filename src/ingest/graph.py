@@ -1,4 +1,4 @@
-from collections import deque
+import streamlit as st
 import networkx as nx
 
 SENIORITY_LAYER_MAP = {
@@ -24,7 +24,8 @@ def extract_dag_subgraphs(G):
 
     return dag_subgraphs, single_nodes
 
-def topo_sort_layered_layout(G, fit=True, padding=30, spacing_factor=1, animate=False, animation_duration=500):
+@st.cache_data
+def topo_sort_layered_layout(graph_name, fit=True, padding=30, spacing_factor=1, animate=False, animation_duration=500):
     """
     Converts a NetworkX directed graph into a layered layout for Cytoscape.js, 
     extracting and visualizing separate DAGs distinctly.
@@ -32,6 +33,7 @@ def topo_sort_layered_layout(G, fit=True, padding=30, spacing_factor=1, animate=
     :param G: A directed graph (DiGraph) from NetworkX
     :return: A dictionary with Cytoscape.js layout options
     """
+    G = st.session_state.GRAPH_CACHE[graph_name].graph
     dag_subgraphs, single_nodes = extract_dag_subgraphs(G.copy())
     positions = {}
     
@@ -99,13 +101,17 @@ def layered_topo_sort_by_seniority(G):
     # Here we just return the layers as is
     return [layers[i] for i in range(5) if layers[i]]
 
-def get_layout_for_seniority_layers(G):
+@st.cache_data
+def get_layout_for_seniority_layers(graph_name):
     """
     Convert the layered employee graph into a layout dict for Cytoscape.js based on seniority layers.
 
     :param G: NetworkX DiGraph representing the employee hierarchy
     :return: Cytoscape.js layout dict with positions of nodes for visualization
     """
+    print("getting graph name", graph_name)
+    G = st.session_state.GRAPH_CACHE[graph_name].graph
+    print(G)
     layers = layered_topo_sort_by_seniority(G)  # Get employees layered by seniority
     
     # Define the layout

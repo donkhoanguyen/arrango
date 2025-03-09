@@ -2,6 +2,7 @@ import streamlit as st
 import streamlit_nested_layout
 
 from chatbot import ChatInstance
+from agent.graph_cache import GraphWrapper
 
 def summary_tile(title, number, description, color):
     st.markdown(
@@ -209,7 +210,11 @@ def task_modal(task):
     st.markdown("### Notes")
     st.markdown("Add any relevant details or comments about this task.")
 
-def accordion_graph_chatbot(G, chatbot_id):
-    with st.expander("✨ Ask about this graph!"):
-        chatbot = ChatInstance(chatbot_id, "This is question about a graph")
+def accordion_graph_chatbot(graph_wrapper: GraphWrapper, chatbot_id):
+    with st.expander("✨ Ask about this graph!", expanded=True):
+        chatbot = ChatInstance(chatbot_id, f"The user might want to know more about things related to this following graph {graph_wrapper}. Note that this chatbot is not for visualizing graph, so if the user ask about it, kindly redirects them to use the '✨ Magic View' option in the 'Choose how you want to view' dropdown")
         chatbot.render()
+
+def magic_view_chatbot(graph_wrapper: GraphWrapper, chatbot_id):
+    chatbot = ChatInstance(chatbot_id, f"This is about modifying how you visualize a network graph. Offer what you can do to visualize the graph: {graph_wrapper}. Note that this chatbot is for visualizing graph, so if the user ask about more information, please direct them to the '✨ Ask about this grpah!' below.")
+    chatbot.render()

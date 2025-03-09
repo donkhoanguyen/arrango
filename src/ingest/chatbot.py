@@ -1,10 +1,17 @@
 import os
 import streamlit as st
+import networkx as nx
+import pandas as pd
+import nx_arangodb as nxadb
+import re
+
+from agent import create_new_agent
 
 os.environ["LANGSMITH_TRACING"] = st.secrets["LANGSMITH_TRACING"]
 os.environ["LANGSMITH_ENDPOINT"] = st.secrets["LANGSMITH_ENDPOINT"]
 os.environ["LANGSMITH_API_KEY"] = st.secrets["LANGSMITH_API_KEY"]
 os.environ["LANGSMITH_PROJECT"] = st.secrets["LANGSMITH_PROJECT"]
+os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
 
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import ToolMessage
@@ -12,26 +19,10 @@ from langchain_core.messages.ai import AIMessageChunk
 from typing import Literal
 from langgraph.prebuilt import create_react_agent
 from langchain_core.tools import tool
-
 from arango import ArangoClient
-
-import pandas as pd
-import numpy as np
-import networkx as nx
-import matplotlib.pyplot as plt
-from random import randint
-import re
-
-from langgraph.prebuilt import create_react_agent
-from langgraph.checkpoint.memory import MemorySaver
 from langchain_openai import ChatOpenAI
 from langchain_community.graphs import ArangoGraph
-from langchain_community.chains.graph_qa.arangodb import ArangoGraphQAChain
-from langchain_core.tools import tool
 
-import os
-import networkx as nx
-import nx_arangodb as nxadb
 
 db = ArangoClient(hosts="https://b61c3b83bfe6.arangodb.cloud:8529") \
     .db(username="root", 
@@ -40,33 +31,6 @@ db = ArangoClient(hosts="https://b61c3b83bfe6.arangodb.cloud:8529") \
         verify=True)
 
 model = ChatOpenAI(model="gpt-4o", temperature=0.7, api_key=st.secrets["OPENAI_API_KEY"])
-
-import nest_asyncio
-nest_asyncio.apply()
-
-
-# Tool 1: Generate image metadata with @tool decorator
-@tool
-def generate_image_metadata(image_url: str):
-    """Mock function to return image metadata."""
-    metadata = {
-        "url": image_url,
-        "width": 1920,
-        "height": 1080,
-        "format": "JPEG",
-        "size_kb": 350  # Image size in KB
-    }
-    return metadata  # Returns a dictionary
-
-# Tool 2: Analyze image metadata with @tool decorator
-@tool
-def analyze_image_metadata(metadata: dict):
-    """Check if image meets certain criteria. If you have to use it, you must run generate_image_metadata first to get some, because the user will not provide for you"""
-    if metadata["width"] >= 1280 and metadata["height"] >= 720 and metadata["size_kb"] <= 500:
-        return {"status": "Valid", "message": "Image meets resolution and size requirements."}
-    else:
-        return {"status": "Invalid", "message": "Image does not meet the required specs."}
-
 
 @tool
 def get_weather(city: Literal["nyc", "sf"]):
@@ -431,20 +395,14 @@ DEFAULT_CHAT_AVATAR_MAP = {
     "assistant": "💁",
 }
 
-def process_stream(stream):
-    for chunk in stream:
-        message = chunk[0]
-        if isinstance(message, ToolMessage):
-            with st.expander(f"Used tool [{message.name}]"):
-                st.markdown("Tool Response:")
-                st.markdown(f"```\n{message.content}\n```")
-            yield ""
-        
-        if isinstance(message, AIMessageChunk):
-            yield message.content
+
 
 class ChatInstance:
     def __init__(self, chatbot_id: str, context: str):
+        if "GRAPH_CACHE" not in st.session_state:
+            raise ValueError("Graph cache is not loaded yet, cannot start chatbot")
+
+        self.GRAPH_CACHE = st.session_state.GRAPH_CACHE
         if chatbot_id not in st.session_state:
             st.session_state[chatbot_id] = [
                 {
@@ -454,6 +412,7 @@ class ChatInstance:
             ]
         self.chatbot_id = chatbot_id
         self.context = context
+        self.agent = create_new_agent()
 
     def get_messages(self):
         return st.session_state[self.chatbot_id]
@@ -465,6 +424,21 @@ class ChatInstance:
         user_msg = st.session_state[f"{self.chatbot_id}/prev_user_msg"]
         self.append_message({"role": "user", "content": user_msg})
 
+    def process_stream(self, stream):
+        for message, metadata in stream:
+            if isinstance(message, ToolMessage):
+                with st.expander(f"Used tool [{message.name}]"):
+                    st.markdown("Tool Response:")
+                    st.markdown(f"```\n{message.content}\n```")
+                    # self.append_message({"role": "tool", "name": message.name, "content": message.content})
+                yield "\n [using tool]\n"
+            
+            if isinstance(message, AIMessageChunk):
+                if metadata["langgraph_node"] == "tools":
+                    yield ""
+                else:
+                    yield message.content
+
     def render(self):
         messages = self.get_messages()
 
@@ -472,7 +446,7 @@ class ChatInstance:
             # Display chat messages from history on app rerun
             for message in messages:
                 # Skip system prompt
-                if message["role"] == "system":
+                if message["role"] == "system" or message["role"] == "tool":
                     continue
                 with st.chat_message(message["role"], avatar=DEFAULT_CHAT_AVATAR_MAP[message["role"]]):
                     st.markdown(message["content"])
@@ -481,16 +455,20 @@ class ChatInstance:
             if len(messages) == 1 or messages[-1]["role"] == "user":
                 with st.chat_message("assistant", avatar=DEFAULT_CHAT_AVATAR_MAP["assistant"]):
                     stream = self.get_response_stream()
-                    response = st.write_stream(process_stream(stream))
+                    response = st.write_stream(self.process_stream(stream))
                 self.append_message({"role": "assistant", "content": response})
 
             # Start accepting chat
         st.chat_input("What do you want to do today?", key=f"{self.chatbot_id}/prev_user_msg", on_submit=self._callback_append_user_msg)
-
     def get_response_stream(self):
-        stream = agent.stream(
+        messages = self.get_messages()
+        stream = self.agent.stream(
             {
                 "messages": self.get_messages(),
+                "graph_cache": self.GRAPH_CACHE,
+                "chosen_graph_name": None,
+                "original_query": messages[-1]["content"],
+                "original_context": self.context
             },
             stream_mode="messages"
         )

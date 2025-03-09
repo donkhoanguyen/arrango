@@ -99,7 +99,6 @@ def visualize_graph(graph_wrapper: Any, query: str, context: str):
         "context": context,
         "full_schema": graph_wrapper.get_full_schema()
     })
-    
     response = llm.invoke(prompt)
     layout = response.content
     print("Layout", layout)
@@ -122,6 +121,7 @@ def visualize_graph(graph_wrapper: Any, query: str, context: str):
         return None, "Error: You might not have generated Python code"
     layout_code =  re.sub(r"^```python\n|```$", "", layout, flags=re.MULTILINE).strip()
     
+    print(layout_code)
     global_vars = {"G": G, "nx": nx}
     local_vars = {}
 
@@ -140,6 +140,7 @@ def visualize_graph(graph_wrapper: Any, query: str, context: str):
 
     print('-'*10)
     FINAL_RESULT = local_vars["FINAL_RESULT"]
+    REASON = local_vars["REASON"]
     print(f"FINAL_RESULT: {FINAL_RESULT}")
     print('-'*10)
     
@@ -149,4 +150,4 @@ def visualize_graph(graph_wrapper: Any, query: str, context: str):
         FINAL_RESULT,
         node_styles,
         edge_styles
-    ), f"Visualized with custom layout ```{json.dumps(FINAL_RESULT, indent=4)}```"
+    ), f"Visualized with custom layout with the reasoning: '{REASON}'"

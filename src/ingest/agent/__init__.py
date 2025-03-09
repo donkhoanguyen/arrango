@@ -26,7 +26,7 @@ from agent.cpm import create_cpm_table, ask_cpm_question
 from agent.hits import create_hits_table, ask_hits_question
 
 # Set up tools
-tools = [get_weather, choose_graph, visualize_graph, create_cpm_table, ask_cpm_question, create_hits_table, ask_hits_question, search_emp_info, extract_subgraph]
+tools = [get_weather, choose_graph, visualize_graph, create_cpm_table, ask_cpm_question, create_hits_table, ask_hits_question, extract_subgraph]
 tools_by_name = {tool.name: tool for tool in tools}
 
 # Set up OpenAI model
@@ -128,7 +128,7 @@ def tool_node(state: AgentState):
             tool_result = tools_by_name[tool_call["name"]].invoke({"G_adb": G_adb})
             outputs.append(
                 ToolMessage(
-                    content=tool_result,
+                    content="created cpm table and can now ask cpm questions on this table",
                     name=tool_call["name"],
                     tool_call_id=tool_call["id"],
                 )
@@ -159,7 +159,7 @@ def tool_node(state: AgentState):
             tool_result = tools_by_name[tool_call["name"]].invoke({"G_adb": G_adb})
             outputs.append(
                 ToolMessage(
-                    content=tool_result,
+                    content="created hits table",
                     name=tool_call["name"],
                     tool_call_id=tool_call["id"],
                 )

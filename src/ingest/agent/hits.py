@@ -142,6 +142,7 @@ def ask_hits_question(question, df, context = None, model_name="gpt-4o"):
     Question: {question}
     
     Generate the Python Code required to answer the query using the `df` object.
+    I already have this dataframe and DO NOT RE-INITIALIZE any dataframe. I will give you one and you will use my dataframe.
     Be very precise and think step by step.
 
     Always set the last variable as `FINAL_RESULT`, which represents the answer to the original query.

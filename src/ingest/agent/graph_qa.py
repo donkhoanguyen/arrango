@@ -34,7 +34,7 @@ def extract_subgraph(
         graph_wrapper: A wrapper containing the graph, its schema, and its description.
         query: The original query from the user.
         context: The original context for why the user asked this query.
-        other_instruction: Further instructions derived from other tool interactions.
+        other_instruction: Further instructions derived from other tool interactions or from message history.
         
     Returns:
         A modified graph_wrapper containing:

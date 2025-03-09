@@ -90,7 +90,7 @@ class GraphWrapper:
 
 choose_graph_template = env.get_template("choose_graph_prompt.jinja")
 @tool
-def choose_graph(graph_cache: dict[str, Any], query: str, context: str):
+def choose_graph(graph_cache: dict[str, Any], query: str, context: str, other_instruction: str):
     """
     Given the user's query and original context on why this is asked, choose the
     most appropriate graph to load for subsequent queries from a list of graphs
@@ -100,7 +100,8 @@ def choose_graph(graph_cache: dict[str, Any], query: str, context: str):
         graph_cache: The cache for preloaded graphs, will be provided in the current state
         query: The original query of the user
         context: The schema of our graph database
-        
+        other_instruction: Further instructions derived from other tool interactions or from message history.
+
     Returns:
         The name of the graph to query from and a brief reason why we chose this one.
     """
@@ -116,6 +117,7 @@ def choose_graph(graph_cache: dict[str, Any], query: str, context: str):
         "NODE_SCHEMA": NODE_SCHEMA,
         "EDGE_SCHEMA": EDGE_SCHEMA,
         "graph_list": graph_list,
+        "other_instruction": other_instruction,
     })
     
     response = llm.invoke(prompt)

@@ -211,6 +211,6 @@ def task_modal(task):
     st.markdown("Add any relevant details or comments about this task.")
 
 def accordion_graph_chatbot(graph_wrapper: GraphWrapper, chatbot_id):
-    with st.expander("✨ Ask about this graph!"):
-        chatbot = ChatInstance(chatbot_id, f"The user might want to know more about things related to this following graph {graph_wrapper}")
+    with st.expander("✨ Ask about this graph!", expanded=True):
+        chatbot = ChatInstance(chatbot_id, f"The user might want to know more about things related to this following graph {graph_wrapper}. Note that this chatbot is not for visualizing graph, so if the user ask about it, kindly redirects them to use the '✨ Magic View' option in the 'Choose how you want to view' dropdown")
         chatbot.render()

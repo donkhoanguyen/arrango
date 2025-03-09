@@ -23,7 +23,6 @@ TASKS_TO_PROJECT_MAP = {
 def get_all_employees_by_team(team_name):
     # Access the employee vertex collection
     # employee_collection = db.collection('employee')  # Ensure this is the correct collection name
-    print("searching for team", team_name)
     if team_name != "*":
         employee_query = f"""
         FOR e IN employee
@@ -181,10 +180,10 @@ def retrieve_task_dependence_graph(task_interact_graph):
         })
     # Style node & edge groups
     node_styles = [
-        NodeStyle("Planned", "#d3d3d3", "name", "person"),           # Orange
-        NodeStyle("In Progress", "#f39c12", "name", "person"), # Green
-        NodeStyle("Completed", "#2ecc71", "name", "person"), # Blue
-        NodeStyle("Blocked", "#e74c3c", "name", "person"), # Amber
+        NodeStyle("Planned", "#d3d3d3", "name", "folder"),           # Orange
+        NodeStyle("In Progress", "#f39c12", "name", "folder"), # Green
+        NodeStyle("Completed", "#2ecc71", "name", "folder"), # Blue
+        NodeStyle("Blocked", "#e74c3c", "name", "folder"), # Amber
     ]
     for task_from, task_to in task_interact_graph.edges:
         edges.append({

@@ -1,4 +1,6 @@
 import streamlit as st
+
+from agent.graph_visualization import GraphVisualizationRequest
 # --- Page Layout ---
 st.set_page_config(layout="wide")  # Set to full-screen mode
 
@@ -198,15 +200,14 @@ def extract_text_from_pdfs(files):
 if st.sidebar.button("Generate Graph"):
     print("Generated!")
 
-st.markdown(f"<h1 style='text-align: center;'>{project_choice}</h1>", unsafe_allow_html=True)
-st.markdown(f"<h2 style='text-align: center;'>Project Overview Dashboard</h1>", unsafe_allow_html=True)
+st.markdown(f"<h1 style='text-align: center;'>Project: {project_choice}</h1>", unsafe_allow_html=True)
+st.markdown(f"<h2 style='text-align: center;'>Project Insights Dashboard</h1>", unsafe_allow_html=True)
 
 project_choice = st.selectbox("Current project:", PROJECT_LIST)
 
 if project_choice != st.session_state.project_choice:
     st.session_state.project_choice = project_choice
     st.rerun()
-
 
 is_ready = True
 
@@ -232,24 +233,42 @@ def render_graph(project_choice, graph_choice, graph_view):
     graph = graph_data["graph"]
     render_function = graph_data["render"]
 
+    # Initialize specific request_visualize function
+    viz_request_id = f"{project_choice}/magic_view/{graph_choice}/viz_request"
+    def request_visualize(visualize_request: GraphVisualizationRequest):
+        # Just to be sure
+        if visualize_request == None:
+            raise ValueError("Can't visualize a null visualization request")
+        st.session_state[viz_request_id]= visualize_request
+        st.rerun()
 
     # Start rendering
     with st.spinner(f"Rendering {graph_choice} graph..."):
-        # Prepare the elements and styles to render
-        elements, node_styles, edge_styles = render_function(graph)
 
         graph_view_by_choice = VIEW_BY_GRAPH_CHOICE[graph_choice]
-        # If is Magic View, then show default cose layouts and chatbot on the side
+
+        # If is Magic View, then show visualization request if any
+        # Otherwise, default cose layouts
+        # Also there is chatbot on the side
         if graph_view == graph_view_by_choice[-1]:
-            st.warning("Magic View not implemented yet")
             graph_col, magic_col = st.columns([3, 1])
             with graph_col:
-                layout_options = "cose"
-                st_link_analysis(elements, layout_options, node_styles, edge_styles)
+                if viz_request_id in st.session_state:
+                    st.markdown("#### ✨ Custom Magic View layout")
+                    print("Visualizing custom")
+                    st.session_state[viz_request_id].render()
+                else:
+                    st.markdown("#### Default layout")
+                    elements, node_styles, edge_styles = render_function(graph)
+                    layout_options = "grid"
+                    st_link_analysis(elements, layout_options, node_styles, edge_styles)
             with magic_col:
-                magic_view_chatbot(GRAPH_CACHE[graph.name], f"{project_choice}/magic_view/{graph_choice}")
+                magic_view_chatbot(GRAPH_CACHE[graph.name], f"{project_choice}/magic_view/{graph_choice}", request_visualize)
+
             return graph.name
 
+        # Prepare the elements and styles to render
+        elements, node_styles, edge_styles = render_function(graph)
         # Determine what layout will the graph render based on different graph view choice and graph data
         layout_options = "cose"
         # Employee Interaction

@@ -1,4 +1,3 @@
-import json
 import re
 from st_link_analysis import EdgeStyle, NodeStyle, st_link_analysis
 import streamlit as st
@@ -34,7 +33,9 @@ graph_viz_template = env.get_template("visualize_graph_layout_prompt.jinja")
 @tool
 def visualize_graph(graph_wrapper: Any, query: str, context: str):
     """
-    This tool is for visualizing a graph based on the user query. 
+    This tool is ONLY for visualizing a graph based on the user query.
+
+    You can only visualize a graph if you are GIVEN A CONTEXT TO DO SO.
     
     You have to make sure you already choose a graph before visualizing it.
      
@@ -53,7 +54,7 @@ def visualize_graph(graph_wrapper: Any, query: str, context: str):
     # Initialize llm
     llm = ChatOpenAI(temperature=0.7, model_name="gpt-4o", api_key=st.secrets["OPENAI_API_KEY"])
     
-    G = graph_wrapper.graph
+    G = graph_wrapper.graph.copy()
     
     # Preparing node and edge and their styles
     nodes = []
@@ -70,10 +71,10 @@ def visualize_graph(graph_wrapper: Any, query: str, context: str):
         })
     # Style node & edge groups
     node_styles = [
-        NodeStyle("Planned", "#d3d3d3", "name", "person"),           # Orange
-        NodeStyle("In Progress", "#f39c12", "name", "person"), # Green
-        NodeStyle("Completed", "#2ecc71", "name", "person"), # Blue
-        NodeStyle("Blocked", "#e74c3c", "name", "person"), # Amber
+        NodeStyle("Planned", "#d3d3d3", "name", "folder"),           # Orange
+        NodeStyle("In Progress", "#f39c12", "name", "folder"), # Green
+        NodeStyle("Completed", "#2ecc71", "name", "folder"), # Blue
+        NodeStyle("Blocked", "#e74c3c", "name", "folder"), # Amber
     ]
     for task_from, task_to in G.edges:
         edges.append({
@@ -101,25 +102,13 @@ def visualize_graph(graph_wrapper: Any, query: str, context: str):
     })
     response = llm.invoke(prompt)
     layout = response.content
-    print("Layout", layout)
-    trimmed_layout = layout[1:-1]
-    # Option 1: Choose preset layout
-    if trimmed_layout in PRESET_LAYOUT_OPTION:
-        return GraphVisualizationRequest(
-            graph_wrapper,
-            elements,
-            trimmed_layout,
-            node_styles,
-            edge_styles
-        ), f"Visualized with preset layout {layout}"
     
-    # Option 2: Generate using python code
     print('-'*10)
     print("\n2) Executing NetworkX code")
     
     if "python" not in layout:
         return None, "Error: You might not have generated Python code"
-    layout_code =  re.sub(r"^```python\n|```$", "", layout, flags=re.MULTILINE).strip()
+    layout_code =  re.sub(r"^```(python|python3)\n|```$", "", layout, flags=re.MULTILINE).strip()
     
     print(layout_code)
     global_vars = {"G": G, "nx": nx}
@@ -144,10 +133,19 @@ def visualize_graph(graph_wrapper: Any, query: str, context: str):
     print(f"FINAL_RESULT: {FINAL_RESULT}")
     print('-'*10)
     
-    return GraphVisualizationRequest(
-        graph_wrapper,
-        elements,
-        FINAL_RESULT,
-        node_styles,
-        edge_styles
-    ), f"Visualized with custom layout with the reasoning: '{REASON}'"
+    if str(FINAL_RESULT) in PRESET_LAYOUT_OPTION:
+        return GraphVisualizationRequest(
+            graph_wrapper,
+            elements,
+            FINAL_RESULT,
+            node_styles,
+            edge_styles
+        ), f"Visualized with preset layout '{FINAL_RESULT}'\nReasoning: '{REASON}'"
+    else:
+        return GraphVisualizationRequest(
+            graph_wrapper,
+            elements,
+            FINAL_RESULT,
+            node_styles,
+            edge_styles
+        ), f"Visualized with custom layout\nReasoning: '{REASON}'"

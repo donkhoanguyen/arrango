@@ -200,8 +200,8 @@ def extract_text_from_pdfs(files):
 if st.sidebar.button("Generate Graph"):
     print("Generated!")
 
-st.markdown(f"<h1 style='text-align: center;'>{project_choice}</h1>", unsafe_allow_html=True)
-st.markdown(f"<h2 style='text-align: center;'>Project Overview Dashboard</h1>", unsafe_allow_html=True)
+st.markdown(f"<h1 style='text-align: center;'>Project: {project_choice}</h1>", unsafe_allow_html=True)
+st.markdown(f"<h2 style='text-align: center;'>Project Insights Dashboard</h1>", unsafe_allow_html=True)
 
 project_choice = st.selectbox("Current project:", PROJECT_LIST)
 

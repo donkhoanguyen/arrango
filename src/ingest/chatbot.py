@@ -412,6 +412,7 @@ class ChatInstance:
         self.agent = create_new_agent()
         self.current_state = None
         self.request_visualize = request_visualize
+        self.chosen_graph_name = None
 
     def get_messages(self) -> list[BaseMessage]:
         return st.session_state[self.chatbot_id]
@@ -479,6 +480,7 @@ class ChatInstance:
                 
                 # Update message
                 self.update_messages(final_state["messages"])
+                self.chosen_graph_name = final_state["chosen_graph_name"]
                 
                 # If there is visualize request, then we request visualize :)
                 if "visualize_request" in final_state and final_state["visualize_request"]:
@@ -496,7 +498,7 @@ class ChatInstance:
             {
                 "messages": self.get_messages(),
                 "graph_cache": self.GRAPH_CACHE,
-                "chosen_graph_name": None,
+                "chosen_graph_name": self.chosen_graph_name,
                 "original_query": messages[-1].content,
                 "original_context": self.context,
                 "visualize_request": None

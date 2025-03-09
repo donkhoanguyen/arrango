@@ -23,7 +23,7 @@ tools_by_name = {tool.name: tool for tool in tools}
 
 # Set up OpenAI model
 model = ChatOpenAI(model="gpt-4o", temperature=0.7, api_key=st.secrets["OPENAI_API_KEY"])
-model  = model.bind_tools(tools)
+model  = model.bind_tools(tools, parallel_tool_calls=False)
 class AgentState(TypedDict):
     # List of messages so far
     messages: Annotated[Sequence[BaseMessage], add_messages]
@@ -94,7 +94,7 @@ def tool_node(state: AgentState):
                 state["visualize_request"] = graph_viz_request
                 outputs.append(
                     ToolMessage(
-                        content = message,
+                        content=message,
                         name=tool_call["name"],
                         tool_call_id=tool_call["id"],
                     )
@@ -156,6 +156,8 @@ def tool_node(state: AgentState):
             return state
         elif tool_name == "extract_subgraph":
             graph_wrapper = state["graph_cache"].get(state["chosen_graph_name"], None)
+            
+            # No proceed if no graph chosen
             if not graph_wrapper:
                 outputs.append(
                     ToolMessage(
@@ -165,13 +167,14 @@ def tool_node(state: AgentState):
                     )
                 )
             else:
+                # Start
                 subgraph_wrapper, message = extract_subgraph.invoke(input={
                     "graph_wrapper": graph_wrapper,
                     "query": state["original_query"],
                     "context": state["original_context"],
                     "other_instruction": tool_call["args"]["other_instruction"]
                 })
-                if not graph_wrapper:
+                if not subgraph_wrapper:
                     outputs.append(
                         ToolMessage(
                             content = message,
@@ -189,6 +192,7 @@ def tool_node(state: AgentState):
                             tool_call_id=tool_call["id"],
                         )
                     )
+                    state["chosen_graph_name"] = subgraph_wrapper.name
                 
             state["messages"] = outputs
             return state
@@ -211,13 +215,17 @@ def call_model(
         state: AgentState,
         config: RunnableConfig,
     ):
+
+    graph_info = "None" if not state["chosen_graph_name"] else str(state["graph_cache"][state["chosen_graph_name"]])
+
     # Get the question 
     system_prompt = SystemMessage(agent_system_prompt_template.render({
         "original_query": state["original_query"],
         "original_context": state["original_context"],
-        "chosen_graph_name": state["chosen_graph_name"]
+        "graph_info": graph_info
     }))
 
+    print(system_prompt)
     # Get response
     response = model.invoke([system_prompt] + state["messages"], config)
     

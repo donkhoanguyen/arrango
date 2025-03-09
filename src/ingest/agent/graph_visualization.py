@@ -54,7 +54,7 @@ def visualize_graph(graph_wrapper: Any, query: str, context: str):
     # Initialize llm
     llm = ChatOpenAI(temperature=0.7, model_name="gpt-4o", api_key=st.secrets["OPENAI_API_KEY"])
     
-    G = graph_wrapper.graph
+    G = graph_wrapper.graph.copy()
     
     # Preparing node and edge and their styles
     nodes = []
@@ -102,14 +102,13 @@ def visualize_graph(graph_wrapper: Any, query: str, context: str):
     })
     response = llm.invoke(prompt)
     layout = response.content
-    print("Layout", layout)
     
     print('-'*10)
     print("\n2) Executing NetworkX code")
     
     if "python" not in layout:
         return None, "Error: You might not have generated Python code"
-    layout_code =  re.sub(r"^```python\n|```$", "", layout, flags=re.MULTILINE).strip()
+    layout_code =  re.sub(r"^```(python|python3)\n|```$", "", layout, flags=re.MULTILINE).strip()
     
     print(layout_code)
     global_vars = {"G": G, "nx": nx}

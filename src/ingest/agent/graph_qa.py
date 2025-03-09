@@ -98,4 +98,4 @@ def extract_subgraph(
         GRAPH_DESCRIPTION
     )
 
-    return subgraph_wrapper, f"Succesfully extracted subgraph {subgraph_wrapper}\nReason: {REASON}\nNOTE: remember to choose graph again if you want to use this for subsequent tool"
+    return subgraph_wrapper, f"Succesfully extracted subgraph {subgraph_wrapper}\nReason: {REASON}\nNOTE: this will override the current chosen_graph_name with the new graph {subgraph_wrapper.name}"

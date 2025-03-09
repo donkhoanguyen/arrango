@@ -6,6 +6,14 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.graph.message import add_messages
 from langgraph.graph import StateGraph, END
 
+import pandas as pd
+from typing import (
+    Annotated,
+    Sequence,
+    TypedDict,
+    Optional
+)
+
 # Set up jinja
 from jinja2 import Environment, FileSystemLoader
 env = Environment(loader=FileSystemLoader("./agent/prompt"))
@@ -15,10 +23,10 @@ from agent.utils import get_weather
 from agent.graph_visualization import visualize_graph
 from agent.graph_qa import extract_subgraph
 from agent.cpm import create_cpm_table, ask_cpm_question
-from agent.hits import create_hits_table, ask_hits_question
+from agent.hits import create_hits_table, ask_hits_question, search_emp_info
 
 # Set up tools
-tools = [get_weather, choose_graph, visualize_graph, create_cpm_table, ask_cpm_question, create_hits_table, ask_hits_question, extract_subgraph]
+tools = [get_weather, choose_graph, visualize_graph, create_cpm_table, ask_cpm_question, create_hits_table, ask_hits_question, search_emp_info, extract_subgraph]
 tools_by_name = {tool.name: tool for tool in tools}
 
 # Set up OpenAI model
@@ -27,6 +35,9 @@ model  = model.bind_tools(tools, parallel_tool_calls=False)
 class AgentState(TypedDict):
     # List of messages so far
     messages: Annotated[Sequence[BaseMessage], add_messages]
+
+    # The dataframe we are working with
+    df: Optional[pd.DataFrame]  # The resulting (CPM, hits?) dataframe
 
     # Cache of all graph already loaded
     graph_cache: dict[str, GraphWrapper]
@@ -42,6 +53,9 @@ class AgentState(TypedDict):
 
     # TODO: For visualization of graph
     visualize_request: dict[str, str]
+
+    # topic: name of employee or name of task
+    topic: str
 
 # Define our tool node
 def tool_node(state: AgentState):
@@ -70,6 +84,12 @@ def tool_node(state: AgentState):
             )
             state["messages"] = outputs
             state["chosen_graph_name"] = graph_name
+            return state
+        
+        elif tool_name == "search_emp_info":
+            topic = state["topic"]
+            tool_result = tools_by_name[tool_call["name"]].invoke({"topic": topic})
+            state["topic"] = tool_result
             return state
         
         elif tool_name == "visualize_graph":
@@ -104,7 +124,7 @@ def tool_node(state: AgentState):
             return state
         
         elif tool_name == "create_cpm_table":
-            G_adb = state["G_adb"]
+            G_adb = state["graph_cache"].get(state["chosen_graph_name"], None).graph
             tool_result = tools_by_name[tool_call["name"]].invoke({"G_adb": G_adb})
             outputs.append(
                 ToolMessage(
@@ -130,7 +150,7 @@ def tool_node(state: AgentState):
             return state
         
         elif tool_name == "create_hits_table":
-            G_adb = state["G_adb"]
+            G_adb = state["graph_cache"].get(state["chosen_graph_name"], None).graph
             tool_result = tools_by_name[tool_call["name"]].invoke({"G_adb": G_adb})
             outputs.append(
                 ToolMessage(

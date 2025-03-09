@@ -1,7 +1,7 @@
 import re
 from st_link_analysis import EdgeStyle, NodeStyle, st_link_analysis
 import streamlit as st
-from typing import Any, Union
+from typing import Any
 from langchain_openai import ChatOpenAI
 import networkx as nx
 
@@ -42,55 +42,20 @@ def extract_subgraph(
     llm = ChatOpenAI(temperature=0.7, model_name="gpt-4o", api_key=st.secrets["OPENAI_API_KEY"])
     
     G = graph_wrapper.graph
-    
-    # Preparing node and edge and their styles
-    nodes = []
-    edges = []
-    
-    for task_node, task_info in G.nodes(data=True):
-        nodes.append({
-            "data": {
-                "id": task_node, 
-                "label": task_info["Status"],
-                "name": task_info["TaskID"],
-                **task_info
-            }
-        })
-    # Style node & edge groups
-    node_styles = [
-        NodeStyle("Planned", "#d3d3d3", "name", "person"),           # Orange
-        NodeStyle("In Progress", "#f39c12", "name", "person"), # Green
-        NodeStyle("Completed", "#2ecc71", "name", "person"), # Blue
-        NodeStyle("Blocked", "#e74c3c", "name", "person"), # Amber
-    ]
-    for task_from, task_to in G.edges:
-        edges.append({
-            "data": {
-                "id": f"{task_from}->{task_to}",
-                "label": "Depends On",
-                "source": task_from,
-                "target": task_to,
-            }
-        })
-    
-    edge_styles = [
-        EdgeStyle("Depends On", caption='label', directed=True),
-    ]
-    elements = {
-        "nodes": nodes,
-        "edges": edges,
-    }
 
     # Prepare layout
-    prompt = graph_viz_template.render({
+    prompt = extract_subgraph.render({
+        "graph_name": graph_wrapper.name,
+        "full_schema": graph_wrapper.get_full_schema(),
+        "graph_description": graph_wrapper.description,
         "query": query,
         "context": context,
-        "full_schema": graph_wrapper.get_full_schema()
+        "other_instruction": other_instruction,
     })
+
     response = llm.invoke(prompt)
     layout = response.content
-    print("Layout", layout)
-    
+
     print('-'*10)
     print("\n2) Executing NetworkX code")
     
@@ -99,7 +64,7 @@ def extract_subgraph(
     layout_code =  re.sub(r"^```python\n|```$", "", layout, flags=re.MULTILINE).strip()
     
     print(layout_code)
-    global_vars = {"G": G, "nx": nx}
+    global_vars = {"G_main": G.copy(), "nx": nx}
     local_vars = {}
 
     MAX_ATTEMPTS = 3
@@ -112,28 +77,24 @@ def extract_subgraph(
         except Exception as e:
             print(f"EXEC ERROR: {e}")
             if attempt == MAX_ATTEMPTS:
-                return None, "Error: unable to run custom layout code"
+                return None, "Error: unable to run extract subgraph code"
             attempt += 1
 
     print('-'*10)
+    GRAPH_NAME = local_vars["GRAPH_NAME"]
+    GRAPH_SCHEMA = local_vars["GRAPH_SCHEMA"]
+    GRAPH_DESCRIPTION = local_vars["GRAPH_DESCRIPTION"]
     FINAL_RESULT = local_vars["FINAL_RESULT"]
     REASON = local_vars["REASON"]
     print(f"FINAL_RESULT: {FINAL_RESULT}")
     print('-'*10)
     
-    if str(FINAL_RESULT) in PRESET_LAYOUT_OPTION:
-        return GraphVisualizationRequest(
-            graph_wrapper,
-            elements,
-            FINAL_RESULT,
-            node_styles,
-            edge_styles
-        ), f"Visualized with preset layout '{FINAL_RESULT}'\nReasoning: '{REASON}'"
-    else:
-        return GraphVisualizationRequest(
-            graph_wrapper,
-            elements,
-            FINAL_RESULT,
-            node_styles,
-            edge_styles
-        ), f"Visualized with custom layout\nReasoning: '{REASON}'"
+    subgraph_wrapper = GraphWrapper(
+        None,
+        FINAL_RESULT,
+        GRAPH_NAME,
+        GRAPH_SCHEMA,
+        GRAPH_DESCRIPTION
+    )
+
+    return subgraph_wrapper, REASON

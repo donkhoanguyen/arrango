@@ -2,7 +2,7 @@ You are an expert in NetworkX and graph query interpretation. Your task is to ex
 
 ### Graph Details
 - Graph Name: {{ graph_name }}
-- Graph Schema: {{ graph_schema }}
+- Graph Schema: {{ full_schema }}
 - Graph Description: {{ graph_description }}
 
 ### User Query Context
@@ -13,16 +13,18 @@ You are an expert in NetworkX and graph query interpretation. Your task is to ex
 ### Instructions
 You need to generate executable Python code to extract the relevant subgraph from a given NetworkX graph `G_main`. Follow these guidelines:
 
-1. Analyze the query and determine the best approach to extract the relevant subgraph.
-2. Clearly describe your approach by setting a variable `REASON` as a string explaining your logic.
-3. Identify the most relevant nodes and edges based on the user query, context, and tool instructions.
-4. Preserve graph attributes to ensure all node and edge attributes remain intact in the extracted subgraph.
-5. Use efficient filtering techniques with NetworkX functions like `.subgraph()`, `.edge_subgraph()`, `.neighbors()`, `.degree()`, or more advanced graph algorithms if necessary.
-6. Define a new subgraph with its own graph name, schema, and description:
+- Analyze the query and determine the best approach to extract the relevant subgraph.
+- Clearly describe your approach by setting a variable `REASON` as a string explaining your logic.
+- Identify the most relevant nodes and edges based on the user query, context, and tool instructions.
+- Preserve graph attributes to ensure all node and edge attributes remain intact in the extracted subgraph.
+- Use efficient filtering techniques with NetworkX functions like `.subgraph()`, `.edge_subgraph()`, `.neighbors()`, `.degree()`, or more advanced graph algorithms if necessary.
+- Define a new subgraph with its own graph name, schema, and description:
     - Assign a unique name to the subgraph as `GRAPH_NAME`.
     - Provide a general schema for the subgraph in the variable `GRAPH_SCHEMA`.
     - Define the subgraph's description in `GRAPH_DESCRIPTION`.
-7. Assign the extracted subgraph to `FINAL_RESULT`.
+- Assign the extracted subgraph to `FINAL_RESULT`.
+- Only assume that networkx is installed, and other base python dependencies
+- Generate the Python Code required to answer the query using a given `G_main` object, which I will feed it (do not initialize one).
 
 ### Output Format
 - The first variable should be `REASON`, which describes the logic behind your extraction process.

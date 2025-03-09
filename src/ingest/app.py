@@ -177,31 +177,35 @@ if "openai_model" not in st.session_state:
 # Sidebar for Upload and API Key
 os.environ["OPENAI_API_KEY"] = st.sidebar.text_input("OpenAI API Key", type="password")
 
-st.sidebar.title("Upload Documents")
-uploaded_files = st.sidebar.file_uploader("Upload project-related documents (PDF only)",
-                                          accept_multiple_files=True, type=["pdf"])
+# st.sidebar.title("Upload Documents")
+# uploaded_files = st.sidebar.file_uploader("Upload project-related documents (PDF only)",
+#                                           accept_multiple_files=True, type=["pdf"])
 
-# --- Function to extract text from PDFs ---
-def extract_text_from_pdfs(files):
-    extracted_texts = []
-    for file in files:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_pdf:
-            temp_pdf.write(file.read())
-            temp_pdf_path = temp_pdf.name
+# # --- Function to extract text from PDFs ---
+# def extract_text_from_pdfs(files):
+#     extracted_texts = []
+#     for file in files:
+#         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_pdf:
+#             temp_pdf.write(file.read())
+#             temp_pdf_path = temp_pdf.name
 
-        doc = fitz.open(temp_pdf_path)
-        text = "\\n".join([page.get_text("text") for page in doc])
-        extracted_texts.append(text)
+#         doc = fitz.open(temp_pdf_path)
+#         text = "\\n".join([page.get_text("text") for page in doc])
+#         extracted_texts.append(text)
 
-        os.remove(temp_pdf_path)  # Cleanup temporary file
-    return extracted_texts
+#         os.remove(temp_pdf_path)  # Cleanup temporary file
+#     return extracted_texts
 
-# Process uploaded PDFs when "Generate Graph" is clicked
-if st.sidebar.button("Generate Graph"):
-    print("Generated!")
+# # Process uploaded PDFs when "Generate Graph" is clicked
+# if st.sidebar.button("Generate Graph"):
+#     print("Generated!")
 
-st.markdown(f"<h1 style='text-align: center;'>Project: {project_choice}</h1>", unsafe_allow_html=True)
-st.markdown(f"<h2 style='text-align: center;'>Project Insights Dashboard</h1>", unsafe_allow_html=True)
+if project_choice != "Company Overview":
+    st.markdown(f"<h1 style='text-align: center;'>Project: {project_choice}</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h2 style='text-align: center;'>Project Insights Dashboard</h1>", unsafe_allow_html=True)
+else:
+    st.markdown(f"<h1 style='text-align: center;'>{project_choice}</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h2 style='text-align: center;'>Company Insights Dashboard</h1>", unsafe_allow_html=True)
 
 project_choice = st.selectbox("Current project:", PROJECT_LIST)
 
@@ -226,7 +230,7 @@ def render_graph(project_choice, graph_choice, graph_view):
     # Do not support tasks-related graph for Company Overview
     st.markdown(f"### {graph_choice} Network")
     if project_choice == list(PROJECT_TO_TEAM_MAP.keys())[-1] and graph_choice != GRAPH_LIST[0]:
-        st.warning(f"{graph_choice} visualization not support for {project_choice} yet", icon="⚠")
+        st.warning(f"{graph_choice} visualization not supported for {project_choice} yet", icon="⚠")
         return
     # Prepare graph and its render function
     graph_data = cur_project_data[graph_choice]
@@ -325,8 +329,8 @@ with col1:
 
 # Second column: Summary tile + Information
 with col2:
-    st.selectbox("task_stat", ["Remaining Tasks", "Active Tasks", "Total Story Points", "Remaining Story Points"], label_visibility="collapsed")
-    summary_tile("Remaining Tasks", len(task_info_dict), "Remaining number of tasks.", "#4CAF50")
+    st.selectbox("task_stat", ["Total Tasks", "Active Tasks", "Total Story Points", "Remaining Story Points"], label_visibility="collapsed")
+    summary_tile("Total Tasks", len(task_info_dict), "Total number of tasks.", "#4CAF50")
 
 # Third column: Summary tile + Information
 with col3:
@@ -348,7 +352,7 @@ with emp_col:
             employee_tile(emp_info_dict[empID])
 
 with task_col:
-    st.markdown(f"### Active Tasks({len(emp_info_dict)})")
+    st.markdown(f"### Active Tasks({len(task_info_dict)})")
 
     # Create a scrollable container
     container = st.container(height=800)

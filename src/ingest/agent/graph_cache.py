@@ -81,7 +81,6 @@ class GraphWrapper:
             full_schema["nodes"][node] = NODE_SCHEMA[node]
         
         for edge in self.schema["edges"]:
-            print(EDGE_SCHEMA)
             full_schema["edges"][edge] = EDGE_SCHEMA[edge]
 
         return full_schema
@@ -107,7 +106,7 @@ def choose_graph(graph_cache: dict[str, Any], query: str, context: str):
     llm = ChatOpenAI(temperature=0.7, model_name="gpt-4o", api_key=st.secrets["OPENAI_API_KEY"])
     llm = llm.bind(response_format={"type": "json_object"})
     
-    graph_list = [str(graph_cache[graph_name]) for graph_name in graph_cache] 
+    graph_list = {graph_name: str(graph_cache[graph_name]) for graph_name in graph_cache}
       
     prompt = choose_graph_template.render({
         "query": query,

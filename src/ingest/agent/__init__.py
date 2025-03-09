@@ -46,7 +46,7 @@ def tool_node(state: AgentState):
     """logic here"""
     outputs = []
     for tool_call in state["messages"][-1].tool_calls:
-        print("Current state in tool :", state)
+        print("Current state graph name in tool :", state["chosen_graph_name"])
         # print("TOOL CALL", tool_call)
         tool_name = tool_call["name"]
         print("calling tool", tool_name)
@@ -117,7 +117,7 @@ def call_model(
         state: AgentState,
         config: RunnableConfig,
     ):
-    print("new state", state)
+    print("cur chosen graph", state["chosen_graph_name"])
     """logic here"""
     # Get the question 
     system_prompt = SystemMessage(

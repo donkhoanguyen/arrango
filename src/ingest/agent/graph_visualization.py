@@ -100,7 +100,6 @@ def visualize_graph(graph_wrapper: Any, query: str, context: str):
         "full_schema": graph_wrapper.get_full_schema()
     })
     
-    print(prompt)
     response = llm.invoke(prompt)
     layout = response.content
     print("Layout", layout)

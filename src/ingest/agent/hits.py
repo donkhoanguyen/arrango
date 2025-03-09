@@ -184,6 +184,9 @@ def ask_hits_question(question, df, topic = None, model_name="gpt-4o"):
 
     I also have additional context: {topic}
 
+    Hubs score should be an indicator of managerial prospect and authority score should be
+    and indicator of technical track prospect.
+
     Based on my original question, FINAL_RESULT, and topic, generate a short and concise response to
     answer my query.
           

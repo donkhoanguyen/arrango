@@ -133,7 +133,8 @@ def tool_node(state: AgentState):
                     tool_call_id=tool_call["id"],
                 )
             )
-            state = {'df': tool_result, "messages": outputs}
+            state["df"] = tool_result
+            state["messages"] = outputs
             return state
         
         elif tool_name == "ask_cpm_question":
@@ -146,7 +147,8 @@ def tool_node(state: AgentState):
                     tool_call_id=tool_call["id"],
                 )
             )
-            state = {"messages": outputs}
+
+            state["messages"] = outputs
             return state
         
         elif tool_name == "create_hits_table":
@@ -159,7 +161,8 @@ def tool_node(state: AgentState):
                     tool_call_id=tool_call["id"],
                 )
             )
-            state = {"df": tool_result, "messages": outputs}
+            state["df"] = tool_result
+            state["messages"] = outputs
             return state
         
         elif tool_name == "ask_hits_question":
@@ -172,7 +175,7 @@ def tool_node(state: AgentState):
                     tool_call_id=tool_call["id"],
                 )
             )
-            state = {"messages": outputs}
+            state["messages"] = outputs
             return state
         elif tool_name == "extract_subgraph":
             graph_wrapper = state["graph_cache"].get(state["chosen_graph_name"], None)

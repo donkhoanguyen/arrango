@@ -102,18 +102,7 @@ def visualize_graph(graph_wrapper: Any, query: str, context: str):
     response = llm.invoke(prompt)
     layout = response.content
     print("Layout", layout)
-    trimmed_layout = layout[1:-1]
-    # Option 1: Choose preset layout
-    if trimmed_layout in PRESET_LAYOUT_OPTION:
-        return GraphVisualizationRequest(
-            graph_wrapper,
-            elements,
-            trimmed_layout,
-            node_styles,
-            edge_styles
-        ), f"Visualized with preset layout {layout}"
     
-    # Option 2: Generate using python code
     print('-'*10)
     print("\n2) Executing NetworkX code")
     
@@ -144,10 +133,19 @@ def visualize_graph(graph_wrapper: Any, query: str, context: str):
     print(f"FINAL_RESULT: {FINAL_RESULT}")
     print('-'*10)
     
-    return GraphVisualizationRequest(
-        graph_wrapper,
-        elements,
-        FINAL_RESULT,
-        node_styles,
-        edge_styles
-    ), f"Visualized with custom layout with the reasoning: '{REASON}'"
+    if str(FINAL_RESULT) in PRESET_LAYOUT_OPTION:
+        return GraphVisualizationRequest(
+            graph_wrapper,
+            elements,
+            FINAL_RESULT,
+            node_styles,
+            edge_styles
+        ), f"Visualized with preset layout '{FINAL_RESULT}'\nReasoning: '{REASON}'"
+    else:
+        return GraphVisualizationRequest(
+            graph_wrapper,
+            elements,
+            FINAL_RESULT,
+            node_styles,
+            edge_styles
+        ), f"Visualized with custom layout\nReasoning: '{REASON}'"

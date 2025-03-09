@@ -80,7 +80,7 @@ def tool_node(state: AgentState):
             if not graph_wrapper:
                 outputs.append(
                     ToolMessage(
-                        content = "You have not chosen a graph yet, do not attempt any more!",
+                        content = "You have not chosen a graph yet, make sure to use choose_graph first!",
                         name=tool_call["name"],
                         tool_call_id=tool_call["id"],
                     )

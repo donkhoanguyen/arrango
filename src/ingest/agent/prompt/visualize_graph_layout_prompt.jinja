@@ -21,12 +21,11 @@ You are given two ways to determine what Cytoscape layout you want to give. You 
 - fcose: Optimized force-directed for large graphs.
 - cola: Constraint-based, good for flow diagrams.
 
-If you want to go with this option, output only the name of one of the above layout.
-
-Second option, you can decide to determine where each individual nodes should be based on the node data, the schema, and the query by writing a Python code using NetworkX algorithm to determine groups of nodes, then individually assign x and y to those nodes into a Cytoscape layout options.
-If you want to go with the second option, here are some guidelines:
+Or, you can decide to determine where each individual nodes should be based on the node data, the schema, and the query by writing a Python code using NetworkX algorithm to determine groups of nodes, then individually assign x and y to those nodes into a Cytoscape layout options.
+Whichever option you choose, here are some guidelines:
 - First, set a variable as `REASON` as a string detailing what approach you are going to take and why are you doing it.
-- Be very precise on the NetworkX algorithm you select to split up the nodes. Think step by step
+- If you choose one of the preset layout by Cytoscape, set it as the `FINAL_RESULT` and then do nothing else
+- If you want to use custom algorithm, be very precise on the NetworkX algorithm you select to split up the nodes. Think step by step
 - Only assume that networkx is installed, and other base python dependencies
 - Generate the Python Code required to answer the query using a given `G` object, which I will feed it (do not initialize one).
 - Always set the last variable as `FINAL_RESULT`, which represents the Cytoscape layout you want the graph to be. Here is the format of a Cytoscape.js layout

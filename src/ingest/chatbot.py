@@ -398,7 +398,7 @@ DEFAULT_CHAT_AVATAR_MAP = {
 
 
 class ChatInstance:
-    def __init__(self, chatbot_id: str, context: str):
+    def __init__(self, chatbot_id: str, context: str, request_visualize=None):
         if "GRAPH_CACHE" not in st.session_state:
             raise ValueError("Graph cache is not loaded yet, cannot start chatbot")
 
@@ -413,6 +413,10 @@ class ChatInstance:
         self.chatbot_id = chatbot_id
         self.context = context
         self.agent = create_new_agent()
+        self.current_state = None
+        if request_visualize:
+            print("equipped with request_visualize")
+        self.request_visualize = request_visualize
 
     def get_messages(self):
         return st.session_state[self.chatbot_id]
@@ -425,19 +429,23 @@ class ChatInstance:
         self.append_message({"role": "user", "content": user_msg})
 
     def process_stream(self, stream):
-        for message, metadata in stream:
-            if isinstance(message, ToolMessage):
-                with st.expander(f"Used tool [{message.name}]"):
-                    st.markdown("Tool Response:")
-                    st.markdown(f"```\n{message.content}\n```")
-                    # self.append_message({"role": "tool", "name": message.name, "content": message.content})
-                yield "\n [using tool]\n"
-            
-            if isinstance(message, AIMessageChunk):
-                if metadata["langgraph_node"] == "tools":
-                    yield ""
-                else:
-                    yield message.content
+        for type, chunk in stream:
+            if type == "messages":
+                message, metadata = chunk
+                if isinstance(message, ToolMessage):
+                    with st.expander(f"Used tool [{message.name}]"):
+                        st.markdown("Tool Response:")
+                        st.markdown(f"```\n{message.content}\n```")
+                        # self.append_message({"role": "tool", "name": message.name, "content": message.content})
+                    yield "\n [using tool]\n"
+                
+                if isinstance(message, AIMessageChunk):
+                    if metadata["langgraph_node"] == "tools":
+                        yield ""
+                    else:
+                        yield message.content
+            elif type =="updates":
+                self.current_state = chunk
 
     def render(self):
         messages = self.get_messages()
@@ -457,9 +465,19 @@ class ChatInstance:
                     stream = self.get_response_stream()
                     response = st.write_stream(self.process_stream(stream))
                 self.append_message({"role": "assistant", "content": response})
+                
+                # Check final state after running
+                final_state_content = self.current_state["agent"]
+                # If there is visualize request, then we request visualize :)
+                if "visualize_request" in final_state_content and final_state_content["visualize_request"]:
+                    if self.request_visualize:
+                        self.request_visualize(final_state_content["visualize_request"])
+                    else:
+                        st.error("You requested a network visualization but there is no support in this chatbot to visualize here.")
 
             # Start accepting chat
         st.chat_input("What do you want to do today?", key=f"{self.chatbot_id}/prev_user_msg", on_submit=self._callback_append_user_msg)
+
     def get_response_stream(self):
         messages = self.get_messages()
         stream = self.agent.stream(
@@ -468,9 +486,10 @@ class ChatInstance:
                 "graph_cache": self.GRAPH_CACHE,
                 "chosen_graph_name": None,
                 "original_query": messages[-1]["content"],
-                "original_context": self.context
+                "original_context": self.context,
+                "visualize_request": None
             },
-            stream_mode="messages"
+            stream_mode=["messages", "updates"]
         )
         # print_stream(stream)
         return stream

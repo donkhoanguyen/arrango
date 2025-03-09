@@ -100,7 +100,7 @@ def magic_ask_employee(employee):
     def ask():
         context = f"You are answering question about this employee, here is their details {employee}"
         chatbot = ChatInstance(f"magic_ask/{employee['EmpID']}", context)
-        # chatbot.render()
+        chatbot.render()
     ask()
 
 def magic_ask_task(task):
@@ -215,6 +215,11 @@ def accordion_graph_chatbot(graph_wrapper: GraphWrapper, chatbot_id):
         chatbot = ChatInstance(chatbot_id, f"The user might want to know more about things related to this following graph {graph_wrapper}. Note that this chatbot is not for visualizing graph, so if the user ask about it, kindly redirects them to use the '✨ Magic View' option in the 'Choose how you want to view' dropdown")
         chatbot.render()
 
-def magic_view_chatbot(graph_wrapper: GraphWrapper, chatbot_id):
-    chatbot = ChatInstance(chatbot_id, f"This is about modifying how you visualize a network graph. Offer what you can do to visualize the graph: {graph_wrapper}. Note that this chatbot is for visualizing graph, so if the user ask about more information, please direct them to the '✨ Ask about this grpah!' below.")
+def magic_view_chatbot(graph_wrapper: GraphWrapper, chatbot_id, request_visualize):
+    context = f"This is about modifying how you visualize a network graph. Offer what you can do to visualize the graph: {graph_wrapper}. Note that this chatbot is for visualizing graph, so if the user ask about more information, please direct them to the '✨ Ask about this grpah!' below."
+    chatbot = ChatInstance(
+        chatbot_id,
+        context,
+        request_visualize
+    )
     chatbot.render()

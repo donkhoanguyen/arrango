@@ -289,7 +289,7 @@ print("Current choice", main_graph_choice)
 
 current_graph_name = render_graph(project_choice, main_graph_choice, main_graph_view)
 
-# accordion_graph_chatbot(GRAPH_CACHE[current_graph_name], f"{project_choice}/magic_ask/{main_graph_choice}")
+accordion_graph_chatbot(GRAPH_CACHE[current_graph_name], f"{project_choice}/magic_ask/{main_graph_choice}")
 
 # Project Overview Section
 st.markdown("### Overview")

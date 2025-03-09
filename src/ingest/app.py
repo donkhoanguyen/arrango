@@ -121,7 +121,10 @@ if project_choice not in st.session_state.all_project_data:
     employee_interaction = None
     with st.spinner(f"Retrieving {project_choice}'s Employee Interaction"):
         employee_interaction = db.get_employee_interact_graph(team)
-        GRAPH_CACHE[f"{team}_employee_interaction"].graph = employee_interaction
+        if team == "*":
+            GRAPH_CACHE[f"employee_interaction"].graph = employee_interaction
+        else:
+            GRAPH_CACHE[f"{team}_employee_interaction"].graph = employee_interaction
 
     task_dependence = None
     if team != "*":
@@ -287,7 +290,8 @@ print("Current choice", main_graph_choice)
 
 current_graph_name = render_graph(project_choice, main_graph_choice, main_graph_view)
 
-accordion_graph_chatbot(GRAPH_CACHE[current_graph_name], f"{project_choice}/magic_ask/{main_graph_choice}")
+if current_graph_name != None:
+    accordion_graph_chatbot(GRAPH_CACHE[current_graph_name], f"{project_choice}/magic_ask/{main_graph_choice}")
 
 # Project Overview Section
 st.markdown("### Overview")

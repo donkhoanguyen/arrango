@@ -8,6 +8,8 @@ import tempfile
 import os
 import database as db
 import graph as graph_utils
+from database import db as adb
+from agent.graph_cache import GraphWrapper
 
 from component import *
 from st_link_analysis import st_link_analysis
@@ -19,6 +21,7 @@ PROJECT_TO_TEAM_MAP = {
     "NeoGraph Linker": "Data Governance",
     "Company Overview": "*"
 }
+
 PROJECT_TO_TASKS_MAP = {
     "StreamSync Pipeline": "bi_tasks",
     "DataForge ETL": "de_tasks",
@@ -40,14 +43,61 @@ PROJECT_LIST = ["StreamSync Pipeline", "DataForge ETL", "AetherFlow Orchestrator
 GRAPH_LIST = ["Employee Interaction", "Task Dependence", "Task Assignment"]
 
 # --- Initialize session state ---
+# Load project choice
 if "project_choice" not in st.session_state:
     st.session_state.project_choice = PROJECT_LIST[0]
-
 project_choice = st.session_state.project_choice
 
+# Load graph cache for Agents
+if "GRAPH_CACHE" not in st.session_state:
+    GRAPH_CACHE = {}
+
+    # Preload name, schema, and description for task dependence graph
+    for project in PROJECT_TO_TASKS_MAP:
+        tasks_col = PROJECT_TO_TASKS_MAP[project]
+
+        if tasks_col == "*":
+            continue
+        tasks_dependence_graph_name = f"{tasks_col}_dependence_graph"
+        schema = {
+            "nodes": ["task"],
+            "edges": ["depends on"],
+            "tasks_col": tasks_col,
+        }
+        description = f"This is the graph of task dependence for the project {project}"
+        
+        GRAPH_CACHE[tasks_dependence_graph_name] = GraphWrapper(adb, None, tasks_dependence_graph_name,schema, description)
+
+    # Preload employee interaction graph
+    for project in PROJECT_TO_TEAM_MAP:
+        team = PROJECT_TO_TEAM_MAP[project]
+        schema = {
+            "nodes": ["employee"],
+            "edges": ["interacts with"],
+        }
+        description = "The graph of extended interaction and help between employees of the company"
+        if team == "*":
+            GRAPH_CACHE["employee_interaction"] = GraphWrapper(adb, None, "employee_interaction", schema, description)
+        else:
+            GRAPH_CACHE[f"{team}_employee_interaction"] = GraphWrapper(adb, None, f"{team}_employee_interaction", schema, description)
+    
+    # Preload task assignment graph
+    schema = {
+        "nodes": ["task", "employee"],
+        "edges": ["assigned to", "advised"]
+    }
+    description = "The graph of task assignment between tasks and employees"
+    GRAPH_CACHE["bi_team_task_assignment"] = GraphWrapper(adb, None, "bi_team_task_assignment", schema, description)
+
+    st.session_state.GRAPH_CACHE = GRAPH_CACHE
+
+GRAPH_CACHE: dict[str, GraphWrapper] = st.session_state.GRAPH_CACHE
+
+# Load entire project data
 if "all_project_data" not in st.session_state:
     st.session_state.all_project_data = {}
 
+# Preload all graphs related to this project
 if project_choice not in st.session_state.all_project_data:
     team = PROJECT_TO_TEAM_MAP[project_choice]
     team_tasks = PROJECT_TO_TASKS_MAP[project_choice]
@@ -66,15 +116,18 @@ if project_choice not in st.session_state.all_project_data:
     if team != "*":
         with st.spinner(f"Retrieving {project_choice}'s Task Assignment"):
             task_assignment = db.get_task_assignment(team_tasks)
+            GRAPH_CACHE["bi_team_task_assignment"].graph = task_assignment
         
     employee_interaction = None
     with st.spinner(f"Retrieving {project_choice}'s Employee Interaction"):
         employee_interaction = db.get_employee_interact_graph(team)
+        GRAPH_CACHE[f"{team}_employee_interaction"].graph = employee_interaction
 
     task_dependence = None
     if team != "*":
         with st.spinner(f"Retrieving {project_choice}'s Task Depenence"):
             task_dependence = db.get_task_dependence_graph(team_tasks)
+            GRAPH_CACHE[f"{team_tasks}_dependence_graph"].graph = task_dependence
     
     # Set data
     st.session_state.all_project_data[project_choice] = {
@@ -93,6 +146,7 @@ if project_choice not in st.session_state.all_project_data:
         "collection/Tasks": tasks_col,
         "collection/Employees": emp_col,
     }
+
 
 # Retrieving data
 cur_project_data = st.session_state.all_project_data[project_choice]
@@ -192,35 +246,33 @@ def render_graph(project_choice, graph_choice, graph_view):
                 layout_options = "cose"
                 st_link_analysis(elements, layout_options, node_styles, edge_styles)
             with magic_col:
-                chatbot = ChatInstance(f"{project_choice}/magic_view/{graph_choice}", "This is about a modifying how you visualize a node-edges graph. Offer what you can do to visualize this graph")
-                chatbot.render()
-            return
+                magic_view_chatbot(GRAPH_CACHE[graph.name], f"{project_choice}/magic_view/{graph_choice}")
+            return graph.name
 
         # Determine what layout will the graph render based on different graph view choice and graph data
         layout_options = "cose"
         # Employee Interaction
         if graph_choice == GRAPH_LIST[0]:
             if graph_view == graph_view_by_choice[0]:
-                layout_options = graph_utils.get_layout_for_seniority_layers(graph)
+                layout_options = graph_utils.get_layout_for_seniority_layers(f"{PROJECT_TO_TEAM_MAP[project_choice]}_employee_interaction")
             elif graph_view == graph_view_by_choice[1]:
                 layout_options = "grid"
 
         # Task Dependence
         elif graph_choice == GRAPH_LIST[1]:
             if graph_view == graph_view_by_choice[0]:
-                layout_options = graph_utils.topo_sort_layered_layout(graph)
+                layout_options = graph_utils.topo_sort_layered_layout(graph.name)
             elif graph_view == graph_view_by_choice[1]:
                 layout_options = "grid"
         
         # Task Assignment
         elif graph_choice == GRAPH_LIST[2]:
             layout_options = "cose"
-            pass
         
         # Finally, render it out to frontend
         st_link_analysis(elements, layout_options, node_styles, edge_styles)
-
-        accordion_graph_chatbot(graph, f"{project_choice}/magic_ask/{graph_choice}")
+        print(f"Current chatbot for {graph.name}")
+        return graph.name
 
 
 graph_choose_col, graph_view_col = st.columns(2)
@@ -235,7 +287,9 @@ with graph_view_col:
     st.session_state.main_graph_view = main_graph_view
 print("Current choice", main_graph_choice)
 
-render_graph(project_choice, main_graph_choice, main_graph_view)
+current_graph_name = render_graph(project_choice, main_graph_choice, main_graph_view)
+
+# accordion_graph_chatbot(GRAPH_CACHE[current_graph_name], f"{project_choice}/magic_ask/{main_graph_choice}")
 
 # Project Overview Section
 st.markdown("### Overview")

@@ -11,13 +11,6 @@ db = client.db(
     password=st.secrets["DATABASE_PASSWORD"]
 )
 
-TASK_STATUS_LABEL_MAP = {
-    "Planned": "PlannedTask",
-    "In Progress": "InProgressTask",
-    "Completed": "CompletedTask",
-    "Blocked": "BlockedTask"
-}
-
 TASKS_TO_PROJECT_MAP = {
     "bi_tasks": "StreamSync Pipeline",
     "de_tasks": "DataForge ETL",
@@ -106,11 +99,14 @@ def get_all_tasks(tasks_col):
 
 def get_employee_interact_graph(team):
     full_graph = nxadb.Graph(name="employee_interaction")
+    # TODO: temporary  
+    return full_graph
     if team == "*":
         return full_graph
     
     filtered_nodes = {n for n, data in full_graph.nodes(data=True) if data["Team"] == team}
     team_graph = full_graph.copy().subgraph(filtered_nodes)
+    team_graph.name = f"{team}_employee_interaction"
     return team_graph
 
 def get_task_dependence_graph(tasks_col):
@@ -178,17 +174,17 @@ def retrieve_task_dependence_graph(task_interact_graph):
         nodes.append({
             "data": {
                 "id": task_node, 
-                "label": TASK_STATUS_LABEL_MAP.get(task_info["Status"], "Planned"),
+                "label": task_info["Status"],
                 "name": task_info["TaskID"],
                 **task_info
             }
         })
     # Style node & edge groups
     node_styles = [
-        NodeStyle("PlannedTask", "#d3d3d3", "name", "person"),           # Orange
-        NodeStyle("InProgressTask", "#f39c12", "name", "person"), # Green
-        NodeStyle("CompletedTask", "#2ecc71", "name", "person"), # Blue
-        NodeStyle("BlockedTask", "#e74c3c", "name", "person"), # Amber
+        NodeStyle("Planned", "#d3d3d3", "name", "person"),           # Orange
+        NodeStyle("In Progress", "#f39c12", "name", "person"), # Green
+        NodeStyle("Completed", "#2ecc71", "name", "person"), # Blue
+        NodeStyle("Blocked", "#e74c3c", "name", "person"), # Amber
     ]
     for task_from, task_to in task_interact_graph.edges:
         edges.append({

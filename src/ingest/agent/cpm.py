@@ -2,26 +2,12 @@ import os
 import streamlit as st
 import networkx as nx
 import pandas as pd
-import nx_arangodb as nxadb
 import re
 
-from agent import create_new_agent
-
-os.environ["LANGSMITH_TRACING"] = st.secrets["LANGSMITH_TRACING"]
-os.environ["LANGSMITH_ENDPOINT"] = st.secrets["LANGSMITH_ENDPOINT"]
-os.environ["LANGSMITH_API_KEY"] = st.secrets["LANGSMITH_API_KEY"]
-os.environ["LANGSMITH_PROJECT"] = st.secrets["LANGSMITH_PROJECT"]
-os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
-
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import ToolMessage
-from langchain_core.messages.ai import AIMessageChunk
-from typing import Literal
-from langgraph.prebuilt import create_react_agent
 from langchain_core.tools import tool
 from arango import ArangoClient
 from langchain_openai import ChatOpenAI
-from langchain_community.graphs import ArangoGraph
 
 
 db = ArangoClient(hosts="https://b61c3b83bfe6.arangodb.cloud:8529") \

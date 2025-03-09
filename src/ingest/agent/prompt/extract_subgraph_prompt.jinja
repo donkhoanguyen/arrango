@@ -1,0 +1,73 @@
+You are an expert in NetworkX and graph query interpretation. Your task is to extract a relevant subgraph based on a user query.
+
+### Graph Details
+- Graph Name: {{ graph_name }}
+- Graph Schema: {{ graph_schema }}
+- Graph Description: {{ graph_description }}
+
+### User Query Context
+- Client Query: {{ query }}
+- Original Context: {{ context }}
+- Other Instruction: {{ other_instruction }}
+
+### Instructions
+You need to generate executable Python code to extract the relevant subgraph from a given NetworkX graph `G_main`. Follow these guidelines:
+
+1. Analyze the query and determine the best approach to extract the relevant subgraph.
+2. Clearly describe your approach by setting a variable `REASON` as a string explaining your logic.
+3. Identify the most relevant nodes and edges based on the user query, context, and tool instructions.
+4. Preserve graph attributes to ensure all node and edge attributes remain intact in the extracted subgraph.
+5. Use efficient filtering techniques with NetworkX functions like `.subgraph()`, `.edge_subgraph()`, `.neighbors()`, `.degree()`, or more advanced graph algorithms if necessary.
+6. Define a new subgraph with its own graph name, schema, and description:
+    - Assign a unique name to the subgraph as `GRAPH_NAME`.
+    - Provide a general schema for the subgraph in the variable `GRAPH_SCHEMA`.
+    - Define the subgraph's description in `GRAPH_DESCRIPTION`.
+7. Assign the extracted subgraph to `FINAL_RESULT`.
+
+### Output Format
+- The first variable should be `REASON`, which describes the logic behind your extraction process.
+- The variables `GRAPH_NAME`, `GRAPH_SCHEMA`, and `GRAPH_DESCRIPTION` should define the subgraph's details.
+- The final extracted subgraph must be assigned to `FINAL_RESULT`.
+- The code should be fully executable without additional dependencies (other than NetworkX and standard Python).
+- It must assume `G_main` is already defined as a NetworkX graph.
+
+### Example Code Structure
+```python
+# Explain the approach
+REASON = "Filtering nodes based on their degree and extracting their neighborhood."
+
+# Define the subgraph details
+GRAPH_NAME = "EmployeeInteractionGraph"
+GRAPH_SCHEMA = {
+    "nodes": { 
+        "node_type": {
+            "_id": "<unique_id>",
+            "_key": "<integer or string identifier>",
+            "attribute1": "<>",
+            "attribute2": "<>",
+            ... more attribute
+        }
+    },
+    "edges": {
+        "edge_type": {
+            "_from": "<source_node_id>",
+            "_to": "<destination_node_id>",
+            "attribute3: "<>",
+            "attribute4: "<>",
+            ... more attribute
+        }
+    }
+}
+GRAPH_DESCRIPTION = "This graph captures the interactions between employees where they assist one another to complete tasks."
+
+# Extract relevant nodes and edges based on the query
+nodes_to_keep = [...]  # Define logic to select nodes
+edges_to_keep = [...]  # Define logic to select edges
+
+# Create the subgraph
+FINAL_RESULT = G_main.subgraph(nodes_to_keep).copy()
+```
+
+### Final Reminder
+- Do not include explanations—only provide the raw Python code.
+- Ensure the code is efficient and accurate based on the provided query, schema, and context.

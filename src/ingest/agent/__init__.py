@@ -174,8 +174,6 @@ def call_model(
         state: AgentState,
         config: RunnableConfig,
     ):
-    print("cur chosen graph", state["chosen_graph_name"])
-    """logic here"""
     # Get the question 
     system_prompt = SystemMessage(agent_system_prompt_template.render({
         "original_query": state["original_query"],

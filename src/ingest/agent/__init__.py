@@ -24,10 +24,10 @@ from agent.utils import get_weather
 from agent.graph_visualization import visualize_graph
 
 from agent.cpm import create_cpm_table, ask_cpm_question
-from agent.hits import create_hits_table, ask_hits_question
+from agent.hits import create_hits_table, ask_hits_question, search_emp_info
 
 # Set up tools
-tools = [get_weather, choose_graph, visualize_graph, create_cpm_table, ask_cpm_question, create_hits_table, ask_hits_question] 
+tools = [get_weather, choose_graph, visualize_graph, create_cpm_table, ask_cpm_question, create_hits_table, ask_hits_question, search_emp_info] 
 tools_by_name = {tool.name: tool for tool in tools}
 
 # Set up OpenAI model
@@ -54,6 +54,9 @@ class AgentState(TypedDict):
 
     # TODO: For visualization of graph
     visualize_request: dict[str, str]
+
+    # topic: name of employee or name of task
+    topic: str
 
 # Define our tool node
 def tool_node(state: AgentState):
@@ -82,6 +85,12 @@ def tool_node(state: AgentState):
             )
             state["messages"] = outputs
             state["chosen_graph_name"] = graph_name
+            return state
+        
+        elif tool_name == "search_emp_info":
+            topic = state["topic"]
+            tool_result = tools_by_name[tool_call["name"]].invoke({"topic": topic})
+            state["topic"] = tool_result
             return state
         
         elif tool_name == "visualize_graph":

@@ -8,6 +8,8 @@ from langchain_core.tools import tool
 from arango.database import StandardDatabase
 from agent import env
 
+import pandas as pd
+
 
 NODE_SCHEMA = {
     "employee": {
@@ -120,4 +122,3 @@ def choose_graph(graph_cache: dict[str, Any], query: str, context: str):
     response_json = json.loads(response.content)
     
     return response_json["name"], response_json["reason"] 
-    

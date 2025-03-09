@@ -1,4 +1,3 @@
-import os
 import streamlit as st
 from typing import Annotated, Sequence, TypedDict
 from langchain_openai import ChatOpenAI
@@ -22,17 +21,17 @@ env = Environment(loader=FileSystemLoader("./agent/prompt"))
 from agent.graph_cache import GraphWrapper, choose_graph
 from agent.utils import get_weather
 from agent.graph_visualization import visualize_graph
-
+from agent.graph_qa import extract_subgraph
 from agent.cpm import create_cpm_table, ask_cpm_question
 from agent.hits import create_hits_table, ask_hits_question, search_emp_info
 
 # Set up tools
-tools = [get_weather, choose_graph, visualize_graph, create_cpm_table, ask_cpm_question, create_hits_table, ask_hits_question, search_emp_info] 
+tools = [get_weather, choose_graph, visualize_graph, create_cpm_table, ask_cpm_question, create_hits_table, ask_hits_question, search_emp_info, extract_subgraph]
 tools_by_name = {tool.name: tool for tool in tools}
 
 # Set up OpenAI model
 model = ChatOpenAI(model="gpt-4o", temperature=0.7, api_key=st.secrets["OPENAI_API_KEY"])
-model  = model.bind_tools(tools)
+model  = model.bind_tools(tools, parallel_tool_calls=False)
 class AgentState(TypedDict):
     # List of messages so far
     messages: Annotated[Sequence[BaseMessage], add_messages]
@@ -100,7 +99,7 @@ def tool_node(state: AgentState):
             if not graph_wrapper:
                 outputs.append(
                     ToolMessage(
-                        content = "You have not chosen a graph yet, do not attempt any more!",
+                        content = "You have not chosen a graph yet, make sure to use choose_graph first!",
                         name=tool_call["name"],
                         tool_call_id=tool_call["id"],
                     )
@@ -115,7 +114,7 @@ def tool_node(state: AgentState):
                 state["visualize_request"] = graph_viz_request
                 outputs.append(
                     ToolMessage(
-                        content = message,
+                        content=message,
                         name=tool_call["name"],
                         tool_call_id=tool_call["id"],
                     )
@@ -175,6 +174,48 @@ def tool_node(state: AgentState):
             )
             state = {"messages": outputs}
             return state
+        elif tool_name == "extract_subgraph":
+            graph_wrapper = state["graph_cache"].get(state["chosen_graph_name"], None)
+            
+            # No proceed if no graph chosen
+            if not graph_wrapper:
+                outputs.append(
+                    ToolMessage(
+                        content = "You have not chosen a graph yet, make sure to use choose_graph first!",
+                        name=tool_call["name"],
+                        tool_call_id=tool_call["id"],
+                    )
+                )
+            else:
+                # Start
+                subgraph_wrapper, message = extract_subgraph.invoke(input={
+                    "graph_wrapper": graph_wrapper,
+                    "query": state["original_query"],
+                    "context": state["original_context"],
+                    "other_instruction": tool_call["args"]["other_instruction"]
+                })
+                if not subgraph_wrapper:
+                    outputs.append(
+                        ToolMessage(
+                            content = message,
+                            name=tool_call["name"],
+                            tool_call_id=tool_call["id"],
+                        )
+                    )
+                else:
+                    print("Succesfully extracted", subgraph_wrapper)
+                    state["graph_cache"][subgraph_wrapper.name] = subgraph_wrapper
+                    outputs.append(
+                        ToolMessage(
+                            content=message,
+                            name=tool_call["name"],
+                            tool_call_id=tool_call["id"],
+                        )
+                    )
+                    state["chosen_graph_name"] = subgraph_wrapper.name
+                
+            state["messages"] = outputs
+            return state
         # else:
         #     tool_result = tools_by_name[tool_name].invoke(tool_call["args"])
         #     outputs.append(
@@ -188,22 +229,23 @@ def tool_node(state: AgentState):
         #     state["messages"] = outputs
         #     return state
 
+agent_system_prompt_template = env.get_template("agent_system_prompt.jinja")
 # Define the node that calls the model
 def call_model(
         state: AgentState,
         config: RunnableConfig,
     ):
-    print("cur chosen graph", state["chosen_graph_name"])
-    """logic here"""
+
+    graph_info = "None" if not state["chosen_graph_name"] else str(state["graph_cache"][state["chosen_graph_name"]])
+
     # Get the question 
-    system_prompt = SystemMessage(
-        "You are a helpful AI assistant that will be querying in our graph databases. \
-        A typical workflow will include: \
-            - Going into the database to select the right graph \
-            - Perform the calculation / analysis required to generate desired output in either natural language or a dataframe \
-            - If necessary, further analyze the output dataframe to formulate answers to the user's question \
-        "
-    )
+    system_prompt = SystemMessage(agent_system_prompt_template.render({
+        "original_query": state["original_query"],
+        "original_context": state["original_context"],
+        "graph_info": graph_info
+    }))
+
+    print(system_prompt)
     # Get response
     response = model.invoke([system_prompt] + state["messages"], config)
     

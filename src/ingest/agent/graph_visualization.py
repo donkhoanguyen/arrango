@@ -29,37 +29,71 @@ class GraphVisualizationRequest:
     def render(self):
         st_link_analysis(self.elements, self.layout, self.node_styles, self.edge_styles)
 
-extract_subgraph_template = env.get_template("extract_subgraph_prompt.jinja")
+graph_viz_template = env.get_template("visualize_graph_layout_prompt.jinja")
 @tool
-def extract_subgraph(graph_wrapper: Any, query: str, context: str):
+def visualize_graph(graph_wrapper: Any, query: str, context: str):
     """
-    This tool extracts a subgraph from a given NetworkX ArangoDB graph based on
-    a natural language query when we need to use NetworkX Algorithm.
-    The tool dynamically generates and executes NetworkX code to retrieve
-    relevant nodes and edges. 
-    Additional context and tool-specific instructions help refine the extraction
-    process.
+    This tool is for visualizing a graph based on the user query. 
+    
+    You have to make sure you already choose a graph before visualizing it.
+     
+    Given a chosen graph, user's query, and original context on why this is asked,
+    choose the most appropriate nodes, edges and their respective styles, along with
+    their layout to visualize the graph.
     
     Args:
-        graph_wrapper: A wrapper containing the graph, its schema, and its description.
-        query: The original query from the user.
-        context: The original context for why the user asked this query.
-        tool_instruction: Further instructions derived from previous tool interactions.
+        graph_wrapper: An instance of GraphWrapper containing the graph, its name, schema, and description
+        query: The original query of the user
+        context: The original context for this chatbot
         
     Returns:
-        A modified graph_wrapper containing:
-            - graph: The extracted subgraph.
-            - schema: The schema of the extracted subgraph.
-            - description: A natural language summary of the extracted subgraph.
+        An instance of GraphVisualizationRequest, to be saved into state later
     """
     # Initialize llm
     llm = ChatOpenAI(temperature=0.7, model_name="gpt-4o", api_key=st.secrets["OPENAI_API_KEY"])
     
     G = graph_wrapper.graph
-   
+    
+    # Preparing node and edge and their styles
+    nodes = []
+    edges = []
+    
+    for task_node, task_info in G.nodes(data=True):
+        nodes.append({
+            "data": {
+                "id": task_node, 
+                "label": task_info["Status"],
+                "name": task_info["TaskID"],
+                **task_info
+            }
+        })
+    # Style node & edge groups
+    node_styles = [
+        NodeStyle("Planned", "#d3d3d3", "name", "folder"),           # Orange
+        NodeStyle("In Progress", "#f39c12", "name", "folder"), # Green
+        NodeStyle("Completed", "#2ecc71", "name", "folder"), # Blue
+        NodeStyle("Blocked", "#e74c3c", "name", "folder"), # Amber
+    ]
+    for task_from, task_to in G.edges:
+        edges.append({
+            "data": {
+                "id": f"{task_from}->{task_to}",
+                "label": "Depends On",
+                "source": task_from,
+                "target": task_to,
+            }
+        })
+    
+    edge_styles = [
+        EdgeStyle("Depends On", caption='label', directed=True),
+    ]
+    elements = {
+        "nodes": nodes,
+        "edges": edges,
+    }
 
     # Prepare layout
-    prompt = extract_subgraph_template.render({
+    prompt = graph_viz_template.render({
         "query": query,
         "context": context,
         "full_schema": graph_wrapper.get_full_schema()

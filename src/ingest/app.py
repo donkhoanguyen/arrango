@@ -259,7 +259,6 @@ def render_graph(project_choice, graph_choice, graph_view):
             with graph_col:
                 if viz_request_id in st.session_state:
                     st.markdown("#### ✨ Custom Magic View layout")
-                    print("Visualizing custom")
                     st.session_state[viz_request_id].render()
                 else:
                     st.markdown("#### Default layout")
@@ -295,7 +294,6 @@ def render_graph(project_choice, graph_choice, graph_view):
         
         # Finally, render it out to frontend
         st_link_analysis(elements, layout_options, node_styles, edge_styles)
-        print(f"Current chatbot for {graph.name}")
         return graph.name
 
 
@@ -309,7 +307,6 @@ with graph_view_col:
     view_choices = VIEW_BY_GRAPH_CHOICE[main_graph_choice]
     main_graph_view = st.selectbox("Choose how you want to view", view_choices)
     st.session_state.main_graph_view = main_graph_view
-print("Current choice", main_graph_choice)
 
 current_graph_name = render_graph(project_choice, main_graph_choice, main_graph_view)
 

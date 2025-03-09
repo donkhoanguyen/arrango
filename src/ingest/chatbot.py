@@ -385,9 +385,9 @@ def ask_cpm_question(question, df, model_name="gpt-4o"):
     return python_to_text
 
 
-tools = [get_weather, generate_image_metadata, analyze_image_metadata, 
-         choose_graph, create_cpm_table, ask_cpm_question,
-         ask_hits_question, create_hits_table]
+tools = [get_weather]#, generate_image_metadata, analyze_image_metadata, 
+        #  choose_graph, create_cpm_table, ak_cpm_question,
+        #  ask_hits_question, create_hits_table]s
 agent = create_react_agent(model, tools=tools)
 
 DEFAULT_CHAT_AVATAR_MAP = {

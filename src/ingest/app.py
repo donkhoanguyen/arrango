@@ -177,7 +177,6 @@ uploaded_files = st.sidebar.file_uploader("Upload project-related documents (PDF
                                           accept_multiple_files=True, type=["pdf"])
 
 # --- Function to extract text from PDFs ---
-@st.cache_data
 def extract_text_from_pdfs(files):
     extracted_texts = []
     for file in files:
@@ -219,7 +218,6 @@ is_ready = True
 if not is_ready:
     st.stop()
 
-@st.cache_data
 def render_graph(project_choice, graph_choice, graph_view):
     # Do not support tasks-related graph for Company Overview
     st.markdown(f"### {graph_choice} Network")

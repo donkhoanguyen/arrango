@@ -244,9 +244,8 @@ def render_graph(project_choice, graph_choice, graph_view):
                 layout_options = "cose"
                 st_link_analysis(elements, layout_options, node_styles, edge_styles)
             with magic_col:
-                chatbot = ChatInstance(f"{project_choice}/magic_view/{graph_choice}", "This is about a modifying how you visualize a node-edges graph. Offer what you can do to visualize this graph")
-                chatbot.render()
-            return
+                magic_view_chatbot(GRAPH_CACHE[graph.name], f"{project_choice}/magic_view/{graph_choice}")
+            return graph.name
 
         # Determine what layout will the graph render based on different graph view choice and graph data
         layout_options = "cose"
@@ -288,7 +287,7 @@ print("Current choice", main_graph_choice)
 
 current_graph_name = render_graph(project_choice, main_graph_choice, main_graph_view)
 
-accordion_graph_chatbot(GRAPH_CACHE[current_graph_name], f"{project_choice}/magic_ask/{main_graph_choice}")
+# accordion_graph_chatbot(GRAPH_CACHE[current_graph_name], f"{project_choice}/magic_ask/{main_graph_choice}")
 
 # Project Overview Section
 st.markdown("### Overview")

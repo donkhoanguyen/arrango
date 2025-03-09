@@ -260,7 +260,7 @@ def render_graph(project_choice, graph_choice, graph_view):
                 else:
                     st.markdown("#### Default layout")
                     elements, node_styles, edge_styles = render_function(graph)
-                    layout_options = "cose"
+                    layout_options = "grid"
                     st_link_analysis(elements, layout_options, node_styles, edge_styles)
             with magic_col:
                 magic_view_chatbot(GRAPH_CACHE[graph.name], f"{project_choice}/magic_view/{graph_choice}", request_visualize)

@@ -7,6 +7,14 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.graph.message import add_messages
 from langgraph.graph import StateGraph, END
 
+import pandas as pd
+from typing import (
+    Annotated,
+    Sequence,
+    TypedDict,
+    Optional
+)
+
 # Set up jinja
 from jinja2 import Environment, FileSystemLoader
 env = Environment(loader=FileSystemLoader("./agent/prompt"))
@@ -28,6 +36,9 @@ model  = model.bind_tools(tools)
 class AgentState(TypedDict):
     # List of messages so far
     messages: Annotated[Sequence[BaseMessage], add_messages]
+
+    # The dataframe we are working with
+    df: Optional[pd.DataFrame]  # The resulting (CPM, hits?) dataframe
 
     # Cache of all graph already loaded
     graph_cache: dict[str, GraphWrapper]
@@ -105,7 +116,7 @@ def tool_node(state: AgentState):
             return state
         
         elif tool_name == "create_cpm_table":
-            G_adb = state["G_adb"]
+            G_adb = state["graph_cache"].get(state["chosen_graph_name"], None).graph
             tool_result = tools_by_name[tool_call["name"]].invoke({"G_adb": G_adb})
             outputs.append(
                 ToolMessage(
@@ -131,7 +142,7 @@ def tool_node(state: AgentState):
             return state
         
         elif tool_name == "create_hits_table":
-            G_adb = state["G_adb"]
+            G_adb = state["graph_cache"].get(state["chosen_graph_name"], None).graph
             tool_result = tools_by_name[tool_call["name"]].invoke({"G_adb": G_adb})
             outputs.append(
                 ToolMessage(

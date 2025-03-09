@@ -100,7 +100,7 @@ def create_hits_table(G_adb):
     return hits_df
 
 @tool
-def ask_hits_question(question, df, topic = None, model_name="gpt-4o"):
+def ask_hits_question(question, df, context = None, model_name="gpt-4o"):
     """
     Provide information about employees using Hyperlink-Induced Topic Search (HITS) to derive insight into: which employee should be on managerial track
     and which one should be on technical track.
@@ -182,7 +182,7 @@ def ask_hits_question(question, df, topic = None, model_name="gpt-4o"):
     I originally asked this question: {question}. Now I receive an answer:
     {FINAL_RESULT}
 
-    I also have additional context: {topic}
+    I also have additional context: {context}
 
     Based on my original question, FINAL_RESULT, and topic, generate a short and concise response to
     answer my query.
@@ -192,31 +192,31 @@ def ask_hits_question(question, df, topic = None, model_name="gpt-4o"):
     return python_to_text
 
 
-@tool
-def search_emp_info(topic: str):
-    """
-    Search for information about an employee in a pandas DataFrame.
+# @tool
+# def search_emp_info(topic: str):
+#     """
+#     Search for information about an employee in a pandas DataFrame.
 
-    Args:
-        question: The question to be answered.
-        topic: The full name of the employee (First Name + Last Name).
+#     Args:
+#         question: The question to be answered.
+#         topic: The full name of the employee (First Name + Last Name).
 
-    Returns:
-        A dictionary containing all information about the employee.
-    """
-    # Load your DataFrame (assuming it's stored in a CSV file for this example)
-    df = pd.read_csv('../../data/employees.csv')
+#     Returns:
+#         A dictionary containing all information about the employee.
+#     """
+#     # Load your DataFrame (assuming it's stored in a CSV file for this example)
+#     df = pd.read_csv('../../data/employees.csv')
     
-    # Combine First Name and Last Name to create a full name column
-    df['FullName'] = df['FirstName'] + ' ' + df['LastName']
+#     # Combine First Name and Last Name to create a full name column
+#     df['FullName'] = df['FirstName'] + ' ' + df['LastName']
     
-    # Search for the employee by full name
-    employee_info = df[df['FullName'] == topic]
+#     # Search for the employee by full name
+#     employee_info = df[df['FullName'] == topic]
     
-    if employee_info.empty:
-        return {"error": "Employee not found"}
+#     if employee_info.empty:
+#         return {"error": "Employee not found"}
     
-    # Convert the employee information to a dictionary
-    employee_dict = employee_info.to_dict(orient='records')[0]
+#     # Convert the employee information to a dictionary
+#     employee_dict = employee_info.to_dict(orient='records')[0]
     
-    return employee_dict
+#     return employee_dict

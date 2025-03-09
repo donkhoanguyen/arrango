@@ -24,10 +24,10 @@ from agent.utils import get_weather
 from agent.graph_visualization import visualize_graph
 
 from agent.cpm import create_cpm_table, ask_cpm_question
-from agent.hits import create_hits_table, ask_hits_question, search_emp_info
+from agent.hits import create_hits_table, ask_hits_question
 
 # Set up tools
-tools = [get_weather, choose_graph, visualize_graph, create_cpm_table, ask_cpm_question, create_hits_table, ask_hits_question, search_emp_info] 
+tools = [get_weather, choose_graph, visualize_graph, create_cpm_table, ask_cpm_question, create_hits_table, ask_hits_question] 
 tools_by_name = {tool.name: tool for tool in tools}
 
 # Set up OpenAI model
@@ -55,8 +55,8 @@ class AgentState(TypedDict):
     # TODO: For visualization of graph
     visualize_request: dict[str, str]
 
-    # topic: name of employee or name of task
-    topic: str
+    # # topic: name of employee or name of task
+    # topic: str
 
 # Define our tool node
 def tool_node(state: AgentState):
@@ -87,11 +87,11 @@ def tool_node(state: AgentState):
             state["chosen_graph_name"] = graph_name
             return state
         
-        elif tool_name == "search_emp_info":
-            topic = state["topic"]
-            tool_result = tools_by_name[tool_call["name"]].invoke({"topic": topic})
-            state["topic"] = tool_result
-            return state
+        # elif tool_name == "search_emp_info":
+        #     topic = state["topic"]
+        #     tool_result = tools_by_name[tool_call["name"]].invoke({"topic": topic})
+        #     state["topic"] = tool_result
+        #     return state
         
         elif tool_name == "visualize_graph":
             graph_wrapper = state["graph_cache"].get(state["chosen_graph_name"], None)
@@ -139,7 +139,10 @@ def tool_node(state: AgentState):
         
         elif tool_name == "ask_cpm_question":
             cpm_df = state["df"]
-            tool_result = tools_by_name[tool_call["name"]].invoke({"df": cpm_df, "question" :tool_call["args"]})
+            context = state["original_context"]
+            tool_result = tools_by_name[tool_call["name"]].invoke({"df": cpm_df, 
+                                                                   "question" :tool_call["args"],
+                                                                   "context": context})
             outputs.append(
                 ToolMessage(
                     content=tool_result,
@@ -165,7 +168,10 @@ def tool_node(state: AgentState):
         
         elif tool_name == "ask_hits_question":
             hits_df = state["df"]
-            tool_result = tools_by_name[tool_call["name"]].invoke({"df": hits_df, "question" :tool_call["args"]})
+            context = state["original_context"]
+            tool_result = tools_by_name[tool_call["name"]].invoke({"df": hits_df, 
+                                                                   "question" :tool_call["args"],
+                                                                   "context": context})
             outputs.append(
                 ToolMessage(
                     content=tool_result,

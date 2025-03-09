@@ -33,7 +33,9 @@ graph_viz_template = env.get_template("visualize_graph_layout_prompt.jinja")
 @tool
 def visualize_graph(graph_wrapper: Any, query: str, context: str):
     """
-    This tool is for visualizing a graph based on the user query. 
+    This tool is ONLY for visualizing a graph based on the user query.
+
+    You can only visualize a graph if you are GIVEN A CONTEXT TO DO SO.
     
     You have to make sure you already choose a graph before visualizing it.
      

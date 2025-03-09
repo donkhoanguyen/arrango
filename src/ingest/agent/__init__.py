@@ -1,4 +1,3 @@
-import os
 import streamlit as st
 from typing import Annotated, Sequence, TypedDict
 from langchain_openai import ChatOpenAI
@@ -14,12 +13,12 @@ env = Environment(loader=FileSystemLoader("./agent/prompt"))
 from agent.graph_cache import GraphWrapper, choose_graph
 from agent.utils import get_weather
 from agent.graph_visualization import visualize_graph
-
+from agent.graph_qa import extract_subgraph
 from agent.cpm import create_cpm_table, ask_cpm_question
 from agent.hits import create_hits_table, ask_hits_question
 
 # Set up tools
-tools = [get_weather, choose_graph, visualize_graph, create_cpm_table, ask_cpm_question, create_hits_table, ask_hits_question] 
+tools = [get_weather, choose_graph, visualize_graph, create_cpm_table, ask_cpm_question, create_hits_table, ask_hits_question, extract_subgraph]
 tools_by_name = {tool.name: tool for tool in tools}
 
 # Set up OpenAI model
@@ -154,6 +153,44 @@ def tool_node(state: AgentState):
                 )
             )
             state = {"messages": outputs}
+            return state
+        elif tool_name == "extract_subgraph":
+            graph_wrapper = state["graph_cache"].get(state["chosen_graph_name"], None)
+            if not graph_wrapper:
+                outputs.append(
+                    ToolMessage(
+                        content = "You have not chosen a graph yet, make sure to use choose_graph first!",
+                        name=tool_call["name"],
+                        tool_call_id=tool_call["id"],
+                    )
+                )
+            else:
+                subgraph_wrapper, message = extract_subgraph.invoke(input={
+                    "graph_wrapper": graph_wrapper,
+                    "query": state["original_query"],
+                    "context": state["original_context"],
+                    "other_instruction": tool_call["args"]["other_instruction"]
+                })
+                if not graph_wrapper:
+                    outputs.append(
+                        ToolMessage(
+                            content = message,
+                            name=tool_call["name"],
+                            tool_call_id=tool_call["id"],
+                        )
+                    )
+                else:
+                    print("Succesfully extracted", subgraph_wrapper)
+                    state["graph_cache"][subgraph_wrapper.name] = subgraph_wrapper
+                    outputs.append(
+                        ToolMessage(
+                            content=message,
+                            name=tool_call["name"],
+                            tool_call_id=tool_call["id"],
+                        )
+                    )
+                
+            state["messages"] = outputs
             return state
         # else:
         #     tool_result = tools_by_name[tool_name].invoke(tool_call["args"])

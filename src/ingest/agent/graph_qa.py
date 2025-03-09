@@ -44,7 +44,7 @@ def extract_subgraph(
     G = graph_wrapper.graph
 
     # Prepare layout
-    prompt = extract_subgraph.render({
+    prompt = extract_subgraph_template.render({
         "graph_name": graph_wrapper.name,
         "full_schema": graph_wrapper.get_full_schema(),
         "graph_description": graph_wrapper.description,
@@ -52,7 +52,7 @@ def extract_subgraph(
         "context": context,
         "other_instruction": other_instruction,
     })
-
+    print(prompt)
     response = llm.invoke(prompt)
     layout = response.content
 
@@ -77,7 +77,7 @@ def extract_subgraph(
         except Exception as e:
             print(f"EXEC ERROR: {e}")
             if attempt == MAX_ATTEMPTS:
-                return None, "Error: unable to run extract subgraph code"
+                return None, "Error: unable to run extract subgraph code, no subgraph was created"
             attempt += 1
 
     print('-'*10)
@@ -85,6 +85,7 @@ def extract_subgraph(
     GRAPH_SCHEMA = local_vars["GRAPH_SCHEMA"]
     GRAPH_DESCRIPTION = local_vars["GRAPH_DESCRIPTION"]
     FINAL_RESULT = local_vars["FINAL_RESULT"]
+    FINAL_RESULT.name = GRAPH_NAME
     REASON = local_vars["REASON"]
     print(f"FINAL_RESULT: {FINAL_RESULT}")
     print('-'*10)
@@ -97,4 +98,4 @@ def extract_subgraph(
         GRAPH_DESCRIPTION
     )
 
-    return subgraph_wrapper, REASON
+    return subgraph_wrapper, f"Succesfully extracted subgraph {subgraph_wrapper}\nReason: {REASON}\nNOTE: remember to choose graph again if you want to use this for subsequent tool"

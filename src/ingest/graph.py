@@ -109,7 +109,9 @@ def get_layout_for_seniority_layers(graph_name):
     :param G: NetworkX DiGraph representing the employee hierarchy
     :return: Cytoscape.js layout dict with positions of nodes for visualization
     """
+    print("seniority", graph_name)
     G = st.session_state.GRAPH_CACHE[graph_name].graph
+    print(G)
     layers = layered_topo_sort_by_seniority(G)  # Get employees layered by seniority
     
     # Define the layout

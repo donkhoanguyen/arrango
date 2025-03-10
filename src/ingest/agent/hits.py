@@ -74,7 +74,7 @@ def create_hits_table(G_adb):
     Returns:
         A pandas DataFrame with the HITS analysis results
     """
-    G_adb = nxadb.DiGraph(name="emp_interaction1")
+    # G_adb = nxadb.DiGraph(name="emp_interaction1")
     hubs, authorities = nx.hits(G_adb)
 
     print("got hub and authority")

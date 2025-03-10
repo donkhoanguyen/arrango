@@ -272,19 +272,25 @@ def render_graph(project_choice, graph_choice, graph_view):
 
         # Prepare the elements and styles to render
         elements, node_styles, edge_styles = render_function(graph)
+
         # Determine what layout will the graph render based on different graph view choice and graph data
         layout_options = "cose"
         # Employee Interaction
         if graph_choice == GRAPH_LIST[0]:
             if graph_view == graph_view_by_choice[0]:
-                layout_options = graph_utils.get_layout_for_seniority_layers(f"{PROJECT_TO_TEAM_MAP[project_choice]}_employee_interaction")
+                if project_choice != "Company Overview":
+                    layout_options = graph_utils.get_layout_for_seniority_layers(f"{PROJECT_TO_TEAM_MAP[project_choice]}_employee_interaction")
+                else:
+                    layout_options = graph_utils.get_layout_for_seniority_layers("employee_interaction")
+                    print(layout_options)
             elif graph_view == graph_view_by_choice[1]:
                 layout_options = "grid"
 
         # Task Dependence
         elif graph_choice == GRAPH_LIST[1]:
             if graph_view == graph_view_by_choice[0]:
-                layout_options = graph_utils.topo_sort_layered_layout(graph.name)
+                layout_options = "grid"
+                # layout_options = graph_utils.topo_sort_layered_layout(graph.name)
             elif graph_view == graph_view_by_choice[1]:
                 layout_options = "grid"
         

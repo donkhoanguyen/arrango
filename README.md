@@ -1,4 +1,6 @@
-# Project Plan
+# Confluence Copilot
+
+# You can demo the current version with the python notebook `DEMO.ipynb`.
 
 ## Overview
 We are building an application that supports task planning using Critical Path Management (CPM) and supports employee promotion using the HITS (Hyperlink-Induced Topic Search) graph algorithm.
@@ -14,12 +16,6 @@ We are building an application that supports task planning using Critical Path M
 - **Employee Graph**: The application will maintain a graph of employees and their interactions.
 - **HITS Algorithm**: The application will use the HITS algorithm to rank employees based on their importance and influence.
 - **Promotion Recommendations**: The application will provide recommendations for employee promotions based on the HITS rankings.
-
-## Technology Stack
-- **Frontend**: React.js for building the user interface.
-- **Backend**: Node.js with Express for handling API requests.
-- **Database**: MongoDB for storing task and employee data.
-- **Graph Processing**: Neo4j for handling graph algorithms and data.
 
 ## Milestones
 1. **Initial Setup**

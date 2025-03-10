@@ -38,6 +38,8 @@ def create_cpm_table(G_adb):
     es = {}  # Earliest Start
     ef = {}  # Earliest Finish
 
+    G_adb = G_adb.copy()
+
     for node in nx.topological_sort(G_adb):
         es[node] = max((ef.get(pred, 0) for pred in G_adb.predecessors(node)), default=0)
         ef[node] = es[node] + G_adb.nodes[node]["duration"]

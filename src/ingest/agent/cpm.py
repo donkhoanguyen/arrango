@@ -1,6 +1,8 @@
 import streamlit as st
 import networkx as nx
-nx.config.fallback_to_nx = True
+import os
+os.environ["NETWORKX_FALLBACK_TO_NX"] = "True"
+
 import pandas as pd
 import re
 

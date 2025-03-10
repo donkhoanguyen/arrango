@@ -84,7 +84,7 @@ def tool_node(state: AgentState):
                     "graph_cache": state["graph_cache"],
                     "query": state["original_query"],
                     "context": state["original_context"],
-                    "other_instruction": tool_call["args"]["other_instruction"]
+                    "other_instruction": tool_call["args"].get("other_instruction", "")
                 }
             )
             outputs.append(
@@ -120,7 +120,8 @@ def tool_node(state: AgentState):
                 graph_viz_request, message = visualize_graph.invoke(input={
                     "graph_wrapper": graph_wrapper,
                     "query": state["original_query"],
-                    "context": state["original_context"]
+                    "context": state["original_context"],
+                    "other_instruction": tool_call["args"].get("other_instruction", ""),
                 })
                 
                 state["visualize_request"] = graph_viz_request
@@ -136,16 +137,26 @@ def tool_node(state: AgentState):
             return state
         
         elif tool_name == "create_cpm_table":
-            G_adb = state["graph_cache"].get(state["chosen_graph_name"], None).graph
-            tool_result = tools_by_name[tool_call["name"]].invoke({"G_adb": G_adb})
-            outputs.append(
-                ToolMessage(
-                    content="created cpm table and can now ask cpm questions on this table",
-                    name=tool_call["name"],
-                    tool_call_id=tool_call["id"],
+            graph_wrapper = state["graph_cache"].get(state["chosen_graph_name"], None)
+            # No proceed if no graph chosen
+            if not graph_wrapper:
+                outputs.append(
+                    ToolMessage(
+                        content = "You have not chosen a graph yet, make sure to use choose_graph first!",
+                        name=tool_call["name"],
+                        tool_call_id=tool_call["id"],
+                    )
                 )
-            )
-            state["df"] = tool_result
+            else:
+                tool_result = tools_by_name[tool_call["name"]].invoke({"G_adb": graph_wrapper.graph})
+                outputs.append(
+                    ToolMessage(
+                        content="created cpm table and can now ask cpm questions on this table",
+                        name=tool_call["name"],
+                        tool_call_id=tool_call["id"],
+                    )
+                )
+                state["df"] = tool_result
             state["messages"] = outputs
             return state
         
@@ -167,16 +178,26 @@ def tool_node(state: AgentState):
             return state
         
         elif tool_name == "create_hits_table":
-            G_adb = state["graph_cache"].get(state["chosen_graph_name"], None).graph
-            tool_result = tools_by_name[tool_call["name"]].invoke({"G_adb": G_adb})
-            outputs.append(
-                ToolMessage(
-                    content="created hits table",
-                    name=tool_call["name"],
-                    tool_call_id=tool_call["id"],
+            graph_wrapper = state["graph_cache"].get(state["chosen_graph_name"], None)
+            
+            if not graph_wrapper:
+                outputs.append(
+                    ToolMessage(
+                        content = "You have not chosen a graph yet, make sure to use choose_graph first!",
+                        name=tool_call["name"],
+                        tool_call_id=tool_call["id"],
+                    )
                 )
-            )
-            state["df"] = tool_result
+            else:
+                tool_result = tools_by_name[tool_call["name"]].invoke({"G_adb": graph_wrapper.graph})
+                outputs.append(
+                    ToolMessage(
+                        content="created hits table",
+                        name=tool_call["name"],
+                        tool_call_id=tool_call["id"],
+                    )
+                )
+                state["df"] = tool_result
             state["messages"] = outputs
             return state
         
@@ -213,7 +234,7 @@ def tool_node(state: AgentState):
                     "graph_wrapper": graph_wrapper,
                     "query": state["original_query"],
                     "context": state["original_context"],
-                    "other_instruction": tool_call["args"]["other_instruction"]
+                    "other_instruction": tool_call["args"].get("other_instruction", "")
                 })
                 if not subgraph_wrapper:
                     outputs.append(
@@ -241,7 +262,7 @@ def tool_node(state: AgentState):
             result = text_to_aql_to_text.invoke(input={
                 "query": state["original_query"],
                 "context": state["original_context"],
-                "other_instruction": tool_call["args"]["other_instruction"]
+                "other_instruction": tool_call["args"].get("other_instruction", "")
             })
             outputs.append(
                 ToolMessage(
@@ -270,7 +291,7 @@ def tool_node(state: AgentState):
                     "graph_wrapper": graph_wrapper,
                     "query": state["original_query"],
                     "context": state["original_context"],
-                    "other_instruction": tool_call["args"]["other_instruction"]
+                    "other_instruction": tool_call["args"].get("other_instruction", "")
                 })
                 outputs.append(
                     ToolMessage(

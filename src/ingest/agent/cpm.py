@@ -1,5 +1,6 @@
 import streamlit as st
 import networkx as nx
+nx.config.fallback_to_nx = True
 import pandas as pd
 import re
 

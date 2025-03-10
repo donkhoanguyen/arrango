@@ -53,34 +53,25 @@ def task_tile(task):
     status_color = get_status_color(task.get("Status", "Not Started"))
 
     st.markdown(
-        f"""
-        <div style="background-color: #f5f5f5; padding: 20px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-        ">
-            <p style="margin: 0; font-size: 24px; font-weight: bold;">
-                {task.get("Description", "Unknown")}
-            </p>
-            <p style="margin: 0; font-size: 20px; font-weight: bold;">
-                [{task.get("Project", "Unknown")}]
-            </p>
-            <div style="background-color: {status_color};
-                color: white;
-                padding: 5px 10px;
-                border-radius: 5px;
-                font-size: 12px;
-                font-weight: bold;
-                display: inline-block;
-                margin-right: 10px;">
-                {task.get("Status", "Planned")}
-            </div>
-            <br> </br> 
-            <p style="color: #555;">Task ID: {task.get("TaskID", "No description available.")}</p>
-            <p><b>Assigned Employees:</b> {', '.join(task.get("AssignedEmployees", [])) or 'None'}</p>
-            <p><b>Advisors:</b> {', '.join(task.get("Advisors", [])) or 'None'}</p>
+    f"""
+    <div style="background-color: #f5f5f5; padding: 20px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);">
+        <p style="margin: 0; font-size: 28px; font-weight: bold; color: #333;">{task.get("Description", "Unknown")}</p>
+        <p style="margin: 5px 0; font-size: 16px; color: #777;"><strong>Project:</strong> {task.get("Project", "Unknown")}</p>
+        <p style="margin: 5px 0; font-size: 20px; font-weight: bold; color: #333;">
+            Task ID: {task.get("TaskID", "Unknown")}
+        </p>
+        <div style="background-color: {status_color};
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            margin-right: 10px;">
+            {task.get("Status", "Planned")}
         </div>
-        """,
-        unsafe_allow_html=True
-    )
-
+    </div>
+    """, unsafe_allow_html=True)
     
     col1, col2, _ = st.columns(3)
 

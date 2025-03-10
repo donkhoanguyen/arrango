@@ -74,7 +74,7 @@ def create_hits_table(G_adb):
     Returns:
         A pandas DataFrame with the HITS analysis results
     """
-    # G_adb = nxadb.DiGraph(name="emp_interaction1")
+    G_adb = nxadb.DiGraph(name="emp_interaction1")
     hubs, authorities = nx.hits(G_adb)
 
     print("got hub and authority")
@@ -120,73 +120,73 @@ def ask_hits_question(question, df, context = None, model_name="gpt-4o"):
     """
     llm = ChatOpenAI(temperature=0, model_name=model_name, api_key=st.secrets["OPENAI_API_KEY"])
     
-    # Get dataframe info
-    df_info = df.info(buf=None, max_cols=None, memory_usage=None, show_counts=None)
-    df_head = df.head()
-    df_describe = df.describe()
+    # # Get dataframe info
+    # df_info = df.info(buf=None, max_cols=None, memory_usage=None, show_counts=None)
+    # df_head = df.head()
+    # df_describe = df.describe()
 
-    print("1) Generating python code")
-    # Construct prompt
-    text_to_python = llm.invoke(f"""
-    I have a pandas dataframe with the following information:
+    # print("1) Generating python code")
+    # # Construct prompt
+    # text_to_python = llm.invoke(f"""
+    # I have a pandas dataframe with the following information:
     
-    DataFrame Info:
-    {df_info}
+    # DataFrame Info:
+    # {df_info}
     
-    First few rows:
-    {df_head}
+    # First few rows:
+    # {df_head}
     
-    Summary statistics:
-    {df_describe}
+    # Summary statistics:
+    # {df_describe}
     
-    Question: {question}
+    # Question: {question}
     
-    Generate the Python Code required to answer the query using the `df` object.
+    # Generate the Python Code required to answer the query using the `df` object.
 
-    I already have this dataframe and DO NOT RE-INITIALIZE any dataframe. I will give you one and you will use my dataframe.
+    # I already have this dataframe and DO NOT RE-INITIALIZE any dataframe. I will give you one and you will use my dataframe.
+
+    # I also have additional context: {context}. Look for here EmpID in this, then combine with the result dataframe to answer my question.
+    # Be very precise and think step by step.
+
+    # Always set the last variable as `FINAL_RESULT`, which represents the answer to the original query.
+
+    # Only provide python code that I can directly execute via `exec()`. Do not provide any instructions.
+
+    # Make sure that `FINAL_RESULT` stores a short & consice answer. Avoid setting this variable to a long sequence.
+
+    # Your code:
+    # """).content
+
+    # text_to_python_cleaned = re.sub(r"^```python\n|```$", "", text_to_python, flags=re.MULTILINE).strip()
     
-    I also have additional context: {context}. Look for here EmpID in this, then combine with the result dataframe to answer my question.
-    Be very precise and think step by step.
+    # print('-'*10)
+    # print(text_to_python_cleaned)
+    # print('-'*10)
 
-    Always set the last variable as `FINAL_RESULT`, which represents the answer to the original query.
+    # print("\n2) Executing python code")
+    # global_vars = {"df": df}
+    # local_vars = {}
 
-    Only provide python code that I can directly execute via `exec()`. Do not provide any instructions.
-
-    Make sure that `FINAL_RESULT` stores a short & consice answer. Avoid setting this variable to a long sequence.
-
-    Your code:
-    """).content
-
-    text_to_python_cleaned = re.sub(r"^```python\n|```$", "", text_to_python, flags=re.MULTILINE).strip()
-    
-    print('-'*10)
-    print(text_to_python_cleaned)
-    print('-'*10)
-
-    print("\n2) Executing python code")
-    global_vars = {"df": df}
-    local_vars = {}
-
-    try:
-        exec(text_to_python_cleaned, global_vars, local_vars)
-        text_to_python_final = text_to_python
-    except Exception as e:
-        print(f"EXEC ERROR: {e}")
-        return f"EXEC ERROR: {e}"
+    # try:
+    #     exec(text_to_python_cleaned, global_vars, local_vars)
+    #     text_to_python_final = text_to_python
+    # except Exception as e:
+    #     print(f"EXEC ERROR: {e}")
+    #     return f"EXEC ERROR: {e}"
     
 
-    print('-'*10)
-    FINAL_RESULT = local_vars["FINAL_RESULT"]
-    print(f"FINAL_RESULT: {FINAL_RESULT}")
-    print('-'*10)
+    # print('-'*10)
+    # FINAL_RESULT = local_vars["FINAL_RESULT"]
+    # print(f"FINAL_RESULT: {FINAL_RESULT}")
+    # print('-'*10)
 
-    print("3) Formulating final answer")
+    # print("3) Formulating final answer")
 
     python_to_text = llm.invoke(f"""
     I originally asked this question: {question}. Now I receive an answer:
-    {FINAL_RESULT}
+    {df}
 
-    I also have additional context: {context}. Look for here EmpID in this, then combine with the result dataframe to answer my question.
+    I also have additional context: {context}.
 
     Hubs score should be an indicator of managerial prospect and authority score should be
     and indicator of technical track prospect.

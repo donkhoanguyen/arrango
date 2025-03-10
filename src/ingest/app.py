@@ -4,10 +4,6 @@ from agent.graph_visualization import GraphVisualizationRequest
 # --- Page Layout ---
 st.set_page_config(layout="wide")  # Set to full-screen mode
 
-import networkx as nx
-import fitz  # PyMuPDF
-import tempfile
-import os
 import database as db
 import graph as graph_utils
 from database import db as adb
@@ -124,7 +120,7 @@ if project_choice not in st.session_state.all_project_data:
     with st.spinner(f"Retrieving {project_choice}'s Employee Interaction"):
         employee_interaction = db.get_employee_interact_graph(team)
         if team == "*":
-            GRAPH_CACHE[f"employee_interaction"].graph = employee_interaction
+            GRAPH_CACHE["employee_interaction"].graph = employee_interaction
         else:
             GRAPH_CACHE[f"{team}_employee_interaction"].graph = employee_interaction
 
@@ -174,57 +170,18 @@ main_graph_view = st.session_state.main_graph_view
 if "openai_model" not in st.session_state:
     st.session_state["openai_model"] = "gpt-4o"
 
-# Sidebar for Upload and API Key
-os.environ["OPENAI_API_KEY"] = st.sidebar.text_input("OpenAI API Key", type="password")
-
-# st.sidebar.title("Upload Documents")
-# uploaded_files = st.sidebar.file_uploader("Upload project-related documents (PDF only)",
-#                                           accept_multiple_files=True, type=["pdf"])
-
-# # --- Function to extract text from PDFs ---
-# def extract_text_from_pdfs(files):
-#     extracted_texts = []
-#     for file in files:
-#         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_pdf:
-#             temp_pdf.write(file.read())
-#             temp_pdf_path = temp_pdf.name
-
-#         doc = fitz.open(temp_pdf_path)
-#         text = "\\n".join([page.get_text("text") for page in doc])
-#         extracted_texts.append(text)
-
-#         os.remove(temp_pdf_path)  # Cleanup temporary file
-#     return extracted_texts
-
-# # Process uploaded PDFs when "Generate Graph" is clicked
-# if st.sidebar.button("Generate Graph"):
-#     print("Generated!")
-
 if project_choice != "Company Overview":
     st.markdown(f"<h1 style='text-align: center;'>Project: {project_choice}</h1>", unsafe_allow_html=True)
-    st.markdown(f"<h2 style='text-align: center;'>Project Insights Dashboard</h1>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center;'>Project Insights Dashboard</h1>", unsafe_allow_html=True)
 else:
     st.markdown(f"<h1 style='text-align: center;'>{project_choice}</h1>", unsafe_allow_html=True)
-    st.markdown(f"<h2 style='text-align: center;'>Company Insights Dashboard</h1>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center;'>Company Insights Dashboard</h1>", unsafe_allow_html=True)
 
 project_choice = st.selectbox("Current project:", PROJECT_LIST)
 
 if project_choice != st.session_state.project_choice:
     st.session_state.project_choice = project_choice
     st.rerun()
-
-is_ready = True
-
-# if not os.environ["OPENAI_API_KEY"] .startswith("sk-"):
-#     st.warning("Please enter your OpenAI API key for GraphRAG Magic Ask!", icon="⚠")
-#     is_ready = False
-
-# if not uploaded_files:
-#     st.warning("Upload your project-related documents here for processing into graph database.", icon="📄")
-#     is_ready = False
-
-if not is_ready:
-    st.stop()
 
 def render_graph(project_choice, graph_choice, graph_view):
     # Do not support tasks-related graph for Company Overview
@@ -290,7 +247,6 @@ def render_graph(project_choice, graph_choice, graph_view):
         elif graph_choice == GRAPH_LIST[1]:
             if graph_view == graph_view_by_choice[0]:
                 layout_options = "grid"
-                # layout_options = graph_utils.topo_sort_layered_layout(graph.name)
             elif graph_view == graph_view_by_choice[1]:
                 layout_options = "grid"
         

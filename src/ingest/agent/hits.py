@@ -183,7 +183,7 @@ def ask_hits_question(question, df, context = None, model_name="gpt-4o"):
     I originally asked this question: {question}. Now I receive an answer:
     {FINAL_RESULT}
 
-    I also have additional context: {context}
+    I also have additional context: {context}. Look for here EmpID in this, then combine with the result dataframe to answer my question.
 
     Hubs score should be an indicator of managerial prospect and authority score should be
     and indicator of technical track prospect.

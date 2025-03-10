@@ -110,8 +110,7 @@ def get_task_dependence_graph(tasks_col):
     return nxadb.DiGraph(name=f"{tasks_col}_dependence_graph")
 
 def get_task_assignment(tasks_col):
-    return nxadb.DiGraph(name=f"bi_team_task_assignment")
-    # return nxadb.MultiDiGraph(name=f"{tasks_col}_task_assignment")
+    return nxadb.DiGraph(name="bi_team_task_assignment")
 
 
 def retrieve_employee_interaction_graph(emp_interact_graph):

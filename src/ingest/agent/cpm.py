@@ -7,7 +7,6 @@ from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
 from arango import ArangoClient
 from langchain_openai import ChatOpenAI
-from networkx.utils import backends
 
 
 db = ArangoClient(hosts="https://b61c3b83bfe6.arangodb.cloud:8529") \
@@ -39,10 +38,9 @@ def create_cpm_table(G_adb):
     es = {}  # Earliest Start
     ef = {}  # Earliest Finish
 
-    with backends.override_backend("nx"):
-        for node in nx.topological_sort(G_adb):
-            es[node] = max((ef.get(pred, 0) for pred in G_adb.predecessors(node)), default=0)
-            ef[node] = es[node] + G_adb.nodes[node]["duration"]
+    for node in nx.topological_sort(G_adb):
+        es[node] = max((ef.get(pred, 0) for pred in G_adb.predecessors(node)), default=0)
+        ef[node] = es[node] + G_adb.nodes[node]["duration"]
 
     # Step 2: Compute latest finish (LF) and start (LS)
     lf = {}  # Latest Finish
